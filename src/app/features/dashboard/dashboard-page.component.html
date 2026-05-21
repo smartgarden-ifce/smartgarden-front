@@ -1,0 +1,303 @@
+<div class="dashboard-shell">
+  <div class="dashboard-frame">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-mark">
+          <i class="pi pi-sparkles"></i>
+        </span>
+        <div>
+          <span class="brand">SmartGarden</span>
+        </div>
+      </div>
+
+      <div class="topbar-side">
+        <div class="connection-pill" [class.is-live]="primaryDeviceSummary()?.active">
+          <span class="connection-dot"></span>
+          <span>{{ sensorConnectionLabel(primaryDeviceSummary()?.active) }}</span>
+        </div>
+        <span class="admin-chip">Admin ▼</span>
+      </div>
+    </header>
+
+    @if (errorMessage(); as error) {
+      <div class="feedback-box">
+        <p-message severity="error" text="Falha de carregamento"></p-message>
+        <p>{{ error }}</p>
+      </div>
+    }
+
+    @if (loading()) {
+      <section class="loading-state">
+        <div class="loading-title">
+          <p-skeleton width="8rem" height="1rem"></p-skeleton>
+          <p-skeleton width="18rem" height="0.9rem"></p-skeleton>
+        </div>
+
+        <div class="loading-metrics">
+          @for (card of [1, 2, 3, 4]; track card) {
+            <div class="loading-box">
+              <p-skeleton width="7rem" height="0.8rem"></p-skeleton>
+              <p-skeleton width="5rem" height="2rem"></p-skeleton>
+              <p-skeleton width="6rem" height="0.8rem"></p-skeleton>
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
+      @if (summary(); as dashboardSummary) {
+        <section class="dashboard-content">
+          <div class="title-row">
+            <div class="title-copy">
+              <h1>Dashboard</h1>
+              <p>Monitoramento ambiental do jardim</p>
+            </div>
+
+            <div class="toolbar">
+              <label class="toolbar-field">
+                <span>Janela</span>
+                <p-select
+                  [options]="hourOptions"
+                  [ngModel]="selectedHours()"
+                  optionLabel="label"
+                  optionValue="value"
+                  appendTo="body"
+                  (ngModelChange)="onHoursChange($event)" />
+              </label>
+
+              <label class="toolbar-field">
+                <span>Dispositivo</span>
+                <p-select
+                  [options]="deviceOptions()"
+                  [ngModel]="selectedDeviceCode()"
+                  optionLabel="label"
+                  optionValue="value"
+                  appendTo="body"
+                  (ngModelChange)="onDeviceFilterChange($event)" />
+              </label>
+
+              <p-button
+                label="Atualizar"
+                icon="pi pi-refresh"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="refresh()" />
+            </div>
+          </div>
+
+          <section class="metrics-grid">
+            <article class="metric-card tone-warm">
+              <div class="metric-topline">
+                <span class="metric-label">Temperatura</span>
+                <span class="metric-icon">
+                  <i class="pi pi-sun"></i>
+                </span>
+              </div>
+              <strong>{{ latestReading()?.temperatureC ?? 0 | number:'1.1-1' }} °C</strong>
+              <p>Atualizado {{ lastUpdatedLabel(latestReading()?.recordedAt) }}</p>
+            </article>
+
+            <article class="metric-card" [ngClass]="humidityToneClass()">
+              <div class="metric-topline">
+                <span class="metric-label">Umidade do Ar</span>
+                <span class="metric-icon">
+                  <i class="pi pi-cloud"></i>
+                </span>
+              </div>
+              <strong>{{ latestReading()?.humidityPercent ?? 0 | number:'1.1-1' }} %</strong>
+              <p>Atualizado {{ lastUpdatedLabel(latestReading()?.recordedAt) }}</p>
+            </article>
+
+            <article class="metric-card" [ngClass]="environmentToneClass()">
+              <div class="metric-topline">
+                <span class="metric-label">Status Ambiente</span>
+                <span class="metric-icon">
+                  <i class="pi pi-compass"></i>
+                </span>
+              </div>
+              <strong class="status-copy">{{ temperatureStatusLabel(latestReading()?.temperatureC) }}</strong>
+              <p>{{ humidityStatusLabel(latestReading()?.humidityPercent) }}</p>
+            </article>
+
+            <article class="metric-card sensor-card" [ngClass]="sensorToneClass()">
+              <div class="metric-topline">
+                <span class="metric-label">Sensor</span>
+                <span class="metric-icon">
+                  <i class="pi pi-wifi"></i>
+                </span>
+              </div>
+              <strong>{{ sensorConnectionLabel(primaryDeviceSummary()?.active) }}</strong>
+              <p>{{ primaryDeviceSummary()?.deviceCode || 'ESP32' }}</p>
+            </article>
+          </section>
+
+          <section class="middle-grid">
+            <article class="panel-card chart-panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Histórico de Temperatura e Umidade</h2>
+                  <p class="panel-caption">Janela de {{ selectedHours() }} horas · {{ recentReadings().length }} amostras</p>
+                </div>
+                <div class="panel-badges">
+                  <span class="mini-badge warm-badge">{{ latestReading()?.temperatureC ?? 0 | number:'1.1-1' }} °C</span>
+                  <span class="mini-badge water-badge">{{ latestReading()?.humidityPercent ?? 0 | number:'1.1-1' }} %</span>
+                </div>
+              </div>
+
+              @if (chartReady()) {
+                <div class="chart-box">
+                  <div class="chart-grid-overlay"></div>
+                  <svg viewBox="0 0 320 130" class="chart-svg" preserveAspectRatio="none" aria-hidden="true">
+                    <line x1="0" y1="110" x2="320" y2="110" class="chart-axis"></line>
+                    <line x1="0" y1="20" x2="320" y2="20" class="chart-axis chart-axis-soft"></line>
+                    <polyline [attr.points]="temperatureChartPoints()" class="chart-line temperature-line"></polyline>
+                    <polyline [attr.points]="humidityChartPoints()" class="chart-line humidity-line"></polyline>
+                  </svg>
+                </div>
+              } @else {
+                <div class="chart-empty">gráfico de linha aqui</div>
+              }
+
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <span class="legend-swatch temperature-line-swatch"></span>
+                  <span>Temperatura</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-swatch humidity-line-swatch"></span>
+                  <span>Umidade</span>
+                </div>
+              </div>
+
+              <div class="chart-timeline">
+                <span>{{ chartLabels()[0] }}</span>
+                <span>{{ chartLabels()[1] }}</span>
+                <span>{{ chartLabels()[2] }}</span>
+              </div>
+            </article>
+
+            <article class="panel-card info-panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Informações do Sensor</h2>
+                  <p class="panel-caption">Resumo operacional do módulo ativo</p>
+                </div>
+                <div class="sensor-orb" [class.is-live]="primaryDeviceSummary()?.active"></div>
+              </div>
+
+              <dl class="sensor-info">
+                <div>
+                  <dt>Nome:</dt>
+                  <dd>{{ primaryDeviceSummary()?.deviceName || 'ESP32 Jardim 01' }}</dd>
+                </div>
+                <div>
+                  <dt>Local:</dt>
+                  <dd>{{ primaryDeviceSummary()?.location || 'Jardim campus' }}</dd>
+                </div>
+                <div>
+                  <dt>Device ID:</dt>
+                  <dd>{{ primaryDeviceSummary()?.deviceCode || 'esp32-01' }}</dd>
+                </div>
+                <div>
+                  <dt>Última leitura:</dt>
+                  <dd>{{ lastUpdatedLabel(primaryDeviceSummary()?.latestReading?.recordedAt) }}</dd>
+                </div>
+                <div>
+                  <dt>Leituras na janela:</dt>
+                  <dd>{{ dashboardSummary.readingsInWindow }}</dd>
+                </div>
+                <div>
+                  <dt>Status:</dt>
+                  <dd>{{ sensorConnectionLabel(primaryDeviceSummary()?.active) }}</dd>
+                </div>
+              </dl>
+
+              <div class="info-footer">
+                <div class="info-chip">
+                  <span>Atividade</span>
+                  <strong>{{ activePercentage() | number:'1.0-0' }}%</strong>
+                </div>
+                <div class="info-chip">
+                  <span>Janela</span>
+                  <strong>{{ dashboardSummary.windowHours }}h</strong>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="panel-card table-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Últimas leituras</h2>
+                <p class="panel-caption">Telemetria recente com status ambiental consolidado</p>
+              </div>
+              <div class="table-summary">
+                <p class="table-meta">
+                  Página {{ (readingsPage()?.page ?? 0) + 1 }} de {{ readingsPage()?.totalPages ?? 0 }}
+                </p>
+                <span class="table-count">{{ readingsPage()?.totalElements ?? 0 }} registros</span>
+              </div>
+            </div>
+
+            @if (readingsLoading()) {
+              <div class="inline-message">
+                <p-message severity="info" text="Atualizando leituras..."></p-message>
+              </div>
+            }
+
+            <div class="table-shell">
+              <table class="readings-table">
+                <thead>
+                  <tr>
+                    <th>Horário</th>
+                    <th>Temperatura</th>
+                    <th>Umidade</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (reading of recentReadings(); track trackByReadingId($index, reading)) {
+                    <tr>
+                      <td>{{ reading.recordedAt | date:'HH:mm:ss' }}</td>
+                      <td>{{ reading.temperatureC | number:'1.1-1' }} °C</td>
+                      <td>{{ reading.humidityPercent | number:'1.1-1' }} %</td>
+                      <td>
+                        <span class="status-pill" [ngClass]="tableStatusClass(reading)">
+                          {{ combinedReadingStatus(reading) }}
+                        </span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="4">Nenhuma leitura encontrada para os filtros atuais.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (readingsPage(); as page) {
+              <div class="table-footer">
+                <span>{{ page.totalElements }} leituras no total</span>
+
+                <div class="footer-actions">
+                  <p-button
+                    label="Anterior"
+                    severity="secondary"
+                    [outlined]="true"
+                    [disabled]="page.first"
+                    (onClick)="goToPreviousPage()" />
+                  <p-button
+                    label="Próxima"
+                    severity="secondary"
+                    [outlined]="true"
+                    [disabled]="page.last"
+                    (onClick)="goToNextPage()" />
+                </div>
+              </div>
+            }
+          </section>
+        </section>
+      }
+    }
+  </div>
+</div>
