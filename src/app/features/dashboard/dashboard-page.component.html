@@ -132,18 +132,54 @@
             </article>
           </section>
 
+          <section class="alerts-panel">
+            <div class="alerts-header">
+              <div>
+                <h2>Alertas do sistema</h2>
+                <p class="panel-caption">Regras automáticas com base nas últimas leituras e conectividade do sensor</p>
+              </div>
+              <span class="alert-counter">{{ dashboardSummary.activeAlertCount }} ativos</span>
+            </div>
+
+            @if (alerts().length > 0) {
+              <div class="alerts-grid">
+                @for (alert of alerts(); track alert.code + '-' + alert.deviceCode) {
+                  <article class="alert-card" [ngClass]="alertSeverityClass(alert.severity)">
+                    <div class="alert-meta">
+                      <span class="alert-severity">{{ alert.severity }}</span>
+                      <span class="alert-device">{{ alert.deviceName }}</span>
+                    </div>
+                    <strong>{{ alert.title }}</strong>
+                    <p>{{ alert.message }}</p>
+                  </article>
+                }
+              </div>
+            } @else {
+              <div class="alerts-empty">
+                <strong>Nenhum alerta ativo</strong>
+                <p>As leituras atuais estão dentro das faixas monitoradas e os sensores estão respondendo normalmente.</p>
+              </div>
+            }
+          </section>
+
           <section class="middle-grid">
             <article class="panel-card chart-panel">
               <div class="panel-header">
                 <div>
                   <h2>Histórico de Temperatura e Umidade</h2>
-                  <p class="panel-caption">Janela de {{ selectedHours() }} horas · {{ recentReadings().length }} amostras</p>
+                  <p class="panel-caption">Janela de {{ selectedHours() }} horas · {{ history()?.totalPoints ?? 0 }} amostras</p>
                 </div>
                 <div class="panel-badges">
                   <span class="mini-badge warm-badge">{{ latestReading()?.temperatureC ?? 0 | number:'1.1-1' }} °C</span>
                   <span class="mini-badge water-badge">{{ latestReading()?.humidityPercent ?? 0 | number:'1.1-1' }} %</span>
                 </div>
               </div>
+
+              @if (historyLoading()) {
+                <div class="inline-message">
+                  <p-message severity="info" text="Atualizando histórico do gráfico..."></p-message>
+                </div>
+              }
 
               @if (chartReady()) {
                 <div class="chart-box">

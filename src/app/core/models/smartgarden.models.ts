@@ -21,6 +21,15 @@ export interface Reading {
   updatedAt: string;
 }
 
+export interface ReadingHistory {
+  deviceCode: string;
+  deviceName: string;
+  windowStart: string;
+  windowEnd: string;
+  totalPoints: number;
+  readings: Reading[];
+}
+
 export interface Device {
   id: number;
   deviceCode: string;
@@ -52,5 +61,16 @@ export interface DashboardSummary {
   readingsInWindow: number;
   averageTemperatureCInWindow: number | null;
   averageHumidityPercentInWindow: number | null;
+  activeAlertCount: number;
+  alerts: DashboardAlert[];
   latestReadingsByDevice: DeviceLatestReadingSummary[];
+}
+
+export interface DashboardAlert {
+  code: string;
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  deviceCode: string;
+  deviceName: string;
 }
