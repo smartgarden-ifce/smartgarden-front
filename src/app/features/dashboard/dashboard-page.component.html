@@ -8,7 +8,7 @@
           alt="Logo SmartGarden" />
         <div>
           <span class="brand">SmartGarden</span>
-          <p class="brand-subtitle">Painel de monitoramento ambiental</p>
+          <p class="brand-subtitle">Estação ESP32 + DHT22</p>
         </div>
       </div>
 
@@ -17,7 +17,7 @@
           <span class="connection-dot"></span>
           <span>{{ sensorConnectionLabel(primaryDeviceSummary()?.active) }}</span>
         </div>
-        <span class="admin-chip">Admin ▼</span>
+        <span class="admin-chip">Jardim ativo</span>
       </div>
     </header>
 
@@ -50,8 +50,13 @@
         <section class="dashboard-content">
           <div class="title-row">
             <div class="title-copy">
-              <h1>Dashboard</h1>
-              <p>Monitoramento ambiental do jardim</p>
+              <h1>Jardim em tempo real</h1>
+              <p>{{ primaryDeviceSummary()?.location || 'Monitoramento ambiental do jardim' }}</p>
+              <div class="reference-strip">
+                <span>Faixa térmica 20-30 °C</span>
+                <span>Umidade ideal 40-70%</span>
+                <span>{{ primaryDeviceSummary()?.deviceCode || 'ESP32' }}</span>
+              </div>
             </div>
 
             <div class="toolbar">
@@ -89,7 +94,7 @@
           <section class="metrics-grid">
             <article class="metric-card tone-warm">
               <div class="metric-topline">
-                <span class="metric-label">Temperatura</span>
+                <span class="metric-label">Ar do jardim</span>
                 <span class="metric-icon">
                   <i class="pi pi-sun"></i>
                 </span>
@@ -100,7 +105,7 @@
 
             <article class="metric-card" [ngClass]="humidityToneClass()">
               <div class="metric-topline">
-                <span class="metric-label">Umidade do Ar</span>
+                <span class="metric-label">Umidade relativa</span>
                 <span class="metric-icon">
                   <i class="pi pi-cloud"></i>
                 </span>
@@ -111,7 +116,7 @@
 
             <article class="metric-card" [ngClass]="environmentToneClass()">
               <div class="metric-topline">
-                <span class="metric-label">Status Ambiente</span>
+                <span class="metric-label">Conforto ambiental</span>
                 <span class="metric-icon">
                   <i class="pi pi-compass"></i>
                 </span>
@@ -120,15 +125,15 @@
               <p>{{ humidityStatusLabel(latestReading()?.humidityPercent) }}</p>
             </article>
 
-            <article class="metric-card sensor-card" [ngClass]="sensorToneClass()">
+            <article class="metric-card action-card" [ngClass]="actionToneClass()">
               <div class="metric-topline">
-                <span class="metric-label">Sensor</span>
+                <span class="metric-label">Recomendação</span>
                 <span class="metric-icon">
-                  <i class="pi pi-wifi"></i>
+                  <i class="pi pi-check-circle"></i>
                 </span>
               </div>
-              <strong>{{ sensorConnectionLabel(primaryDeviceSummary()?.active) }}</strong>
-              <p>{{ primaryDeviceSummary()?.deviceCode || 'ESP32' }}</p>
+              <strong class="status-copy">{{ actionRecommendationLabel() }}</strong>
+              <p>{{ sensorConnectionLabel(primaryDeviceSummary()?.active) }} · última leitura {{ lastUpdatedLabel(latestReading()?.recordedAt) }}</p>
             </article>
           </section>
 
@@ -136,8 +141,8 @@
             <article class="panel-card chart-panel">
               <div class="panel-header">
                 <div>
-                  <h2>Histórico de Temperatura e Umidade</h2>
-                  <p class="panel-caption">Janela de {{ selectedHours() }} horas · {{ recentReadings().length }} amostras</p>
+                  <h2>Tendência ambiental</h2>
+                  <p class="panel-caption">Leituras reais do ESP32 · {{ selectedHours() }} horas · {{ recentReadings().length }} amostras</p>
                 </div>
                 <div class="panel-badges">
                   <span class="mini-badge warm-badge">{{ latestReading()?.temperatureC ?? 0 | number:'1.1-1' }} °C</span>
@@ -191,6 +196,15 @@
                 </div>
               </div>
 
+              <div class="comfort-ranges">
+                <span>Frio &lt; 20 °C</span>
+                <span>Agradável 20-30 °C</span>
+                <span>Quente ≥ 30 °C</span>
+                <span>Seco &lt; 40%</span>
+                <span>Confortável 40-70%</span>
+                <span>Úmido &gt; 70%</span>
+              </div>
+
               <div class="chart-timeline">
                 <span>{{ chartLabels()[0] }}</span>
                 <span>{{ chartLabels()[1] }}</span>
@@ -202,7 +216,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Informações do Sensor</h2>
-                  <p class="panel-caption">Resumo operacional do módulo ativo</p>
+                  <p class="panel-caption">Estação de coleta no jardim</p>
                 </div>
                 <div class="sensor-orb" [class.is-live]="primaryDeviceSummary()?.active"></div>
               </div>
@@ -250,8 +264,8 @@
           <section class="panel-card table-panel">
             <div class="panel-header">
               <div>
-                <h2>Últimas leituras</h2>
-                <p class="panel-caption">Telemetria recente com status ambiental consolidado</p>
+                  <h2>Registro de telemetria</h2>
+                <p class="panel-caption">Histórico recente com diagnóstico ambiental</p>
               </div>
               <div class="table-summary">
                 <p class="table-meta">

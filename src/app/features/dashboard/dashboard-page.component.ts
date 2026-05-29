@@ -228,6 +228,60 @@ export class DashboardPageComponent {
     return 'tone-stable';
   }
 
+  actionRecommendationLabel(): string {
+    const latest = this.latestReading();
+    if (!latest) {
+      return 'Aguardando leitura';
+    }
+
+    if (latest.temperatureC >= 30 && latest.humidityPercent < 40) {
+      return 'Sombrear e irrigar';
+    }
+
+    if (latest.temperatureC >= 30) {
+      return 'Reduzir calor';
+    }
+
+    if (latest.humidityPercent < 40) {
+      return 'Verificar irrigação';
+    }
+
+    if (latest.humidityPercent > 70) {
+      return 'Aumentar ventilação';
+    }
+
+    if (latest.temperatureC <= 20) {
+      return 'Monitorar frio';
+    }
+
+    return 'Sem ação necessária';
+  }
+
+  actionToneClass(): string {
+    const latest = this.latestReading();
+    if (!latest) {
+      return 'tone-neutral';
+    }
+
+    if (latest.temperatureC >= 30) {
+      return 'tone-warm';
+    }
+
+    if (latest.humidityPercent < 40) {
+      return 'tone-dry';
+    }
+
+    if (latest.humidityPercent > 70) {
+      return 'tone-water';
+    }
+
+    if (latest.temperatureC <= 20) {
+      return 'tone-cool';
+    }
+
+    return 'tone-stable';
+  }
+
   sensorToneClass(): string {
     return this.primaryDeviceSummary()?.active ? 'tone-online' : 'tone-offline';
   }

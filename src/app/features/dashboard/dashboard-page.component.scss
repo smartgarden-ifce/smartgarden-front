@@ -142,6 +142,26 @@
   font-size: 0.98rem;
 }
 
+.reference-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.reference-strip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.72rem;
+  border: 1px solid rgba(90, 106, 84, 0.12);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .toolbar {
   display: grid;
   grid-template-columns: repeat(3, minmax(170px, auto));
@@ -258,6 +278,11 @@
   background: var(--success-soft);
 }
 
+.metric-card.tone-neutral .metric-icon {
+  color: var(--muted);
+  background: var(--panel-soft);
+}
+
 .metric-card.tone-cool .metric-icon {
   color: #3c77b6;
   background: #ddeaf8;
@@ -275,12 +300,26 @@
   line-height: 1.1;
 }
 
-.sensor-card strong {
+.sensor-card strong,
+.action-card.tone-stable strong {
   color: var(--success);
 }
 
-.metric-card.tone-offline strong {
+.metric-card.tone-offline strong,
+.action-card.tone-dry strong {
   color: var(--danger);
+}
+
+.action-card.tone-warm strong {
+  color: var(--warm);
+}
+
+.action-card.tone-water strong {
+  color: var(--water);
+}
+
+.action-card.tone-cool strong {
+  color: #3c77b6;
 }
 
 .panel-card {
@@ -459,6 +498,25 @@
   margin-top: 1rem;
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.comfort-ranges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.comfort-ranges span {
+  min-height: 2.15rem;
+  padding: 0.48rem 0.62rem;
+  border: 1px solid rgba(90, 106, 84, 0.1);
+  border-radius: 12px;
+  background: #fcfbf8;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .legend-item {
@@ -766,7 +824,8 @@
   .metrics-grid,
   .loading-metrics,
   .toolbar,
-  .info-footer {
+  .info-footer,
+  .comfort-ranges {
     grid-template-columns: 1fr;
   }
 
