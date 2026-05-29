@@ -9,7 +9,15 @@ import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { forkJoin } from 'rxjs';
 
-import { DashboardSummary, Device, DeviceLatestReadingSummary, PageResponse, Reading } from '../../core/models/smartgarden.models';
+import {
+  DashboardAlert,
+  DashboardSummary,
+  Device,
+  DeviceLatestReadingSummary,
+  PageResponse,
+  Reading,
+  ReadingHistory
+} from '../../core/models/smartgarden.models';
 import { SmartgardenApiService } from '../../core/services/smartgarden-api.service';
 
 interface SelectOption<T> {
@@ -44,8 +52,10 @@ export class DashboardPageComponent {
   readonly summary = signal<DashboardSummary | null>(null);
   readonly devices = signal<Device[]>([]);
   readonly readingsPage = signal<PageResponse<Reading> | null>(null);
+  readonly history = signal<ReadingHistory | null>(null);
   readonly loading = signal(true);
   readonly readingsLoading = signal(false);
+  readonly historyLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly selectedHours = signal(24);
   readonly selectedDeviceCode = signal('');
@@ -78,11 +88,10 @@ export class DashboardPageComponent {
 
   readonly latestReading = computed<Reading | null>(() => this.primaryDeviceSummary()?.latestReading ?? null);
 
+  readonly alerts = computed<DashboardAlert[]>(() => this.summary()?.alerts ?? []);
   readonly recentReadings = computed<Reading[]>(() => this.readingsPage()?.content ?? []);
 
-  readonly historicalReadings = computed<Reading[]>(() => {
-    return [...this.recentReadings()].reverse();
-  });
+  readonly historicalReadings = computed<Reading[]>(() => this.history()?.readings ?? []);
 
   readonly temperatureChartPoints = computed(() => this.buildChartPoints(this.historicalReadings(), 'temperatureC'));
   readonly humidityChartPoints = computed(() => this.buildChartPoints(this.historicalReadings(), 'humidityPercent'));
@@ -116,11 +125,13 @@ export class DashboardPageComponent {
   onHoursChange(hours: number): void {
     this.selectedHours.set(Number(hours));
     this.loadSummary();
+    this.loadHistory();
   }
 
   onDeviceFilterChange(deviceCode: string): void {
     this.selectedDeviceCode.set(deviceCode);
     this.loadReadings(0);
+    this.loadHistory();
   }
 
   goToPreviousPage(): void {
@@ -143,6 +154,17 @@ export class DashboardPageComponent {
 
   refresh(): void {
     this.loadInitialData();
+  }
+
+  alertSeverityClass(severity: DashboardAlert['severity']): string {
+    switch (severity) {
+      case 'critical':
+        return 'alert-critical';
+      case 'warning':
+        return 'alert-warning';
+      default:
+        return 'alert-info';
+    }
   }
 
   temperatureStatusLabel(temperatureC: number | null | undefined): string {
@@ -306,6 +328,7 @@ export class DashboardPageComponent {
           this.devices.set(devices);
           this.readingsPage.set(readings);
           this.loading.set(false);
+          this.loadHistory();
         },
         error: (error) => {
           this.errorMessage.set(this.toErrorMessage(error));
@@ -350,6 +373,32 @@ export class DashboardPageComponent {
         error: (error) => {
           this.errorMessage.set(this.toErrorMessage(error));
           this.readingsLoading.set(false);
+        }
+      });
+  }
+
+  private loadHistory(): void {
+    const deviceCode = this.selectedDeviceCode() || this.summary()?.latestReadingsByDevice[0]?.deviceCode;
+    if (!deviceCode) {
+      this.history.set(null);
+      return;
+    }
+
+    this.historyLoading.set(true);
+    this.api.getReadingHistory({
+      deviceCode,
+      hours: this.selectedHours(),
+      limit: 120
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (history) => {
+          this.history.set(history);
+          this.historyLoading.set(false);
+        },
+        error: (error) => {
+          this.errorMessage.set(this.toErrorMessage(error));
+          this.historyLoading.set(false);
         }
       });
   }
