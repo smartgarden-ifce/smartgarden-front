@@ -154,6 +154,27 @@
                     <polyline [attr.points]="temperatureChartPoints()" class="chart-line temperature-line"></polyline>
                     <polyline [attr.points]="humidityChartPoints()" class="chart-line humidity-line"></polyline>
                   </svg>
+                  <div class="chart-markers" aria-hidden="true">
+                    @for (marker of temperatureChartMarkers(); track marker.key) {
+                      <span
+                        class="chart-marker temperature-marker"
+                        [style.left.%]="marker.left"
+                        [style.top.%]="marker.top">
+                        <span class="chart-dot"></span>
+                        <span class="chart-value">{{ marker.valueLabel }}</span>
+                      </span>
+                    }
+
+                    @for (marker of humidityChartMarkers(); track marker.key) {
+                      <span
+                        class="chart-marker humidity-marker"
+                        [style.left.%]="marker.left"
+                        [style.top.%]="marker.top">
+                        <span class="chart-dot"></span>
+                        <span class="chart-value">{{ marker.valueLabel }}</span>
+                      </span>
+                    }
+                  </div>
                 </div>
               } @else {
                 <div class="chart-empty">gráfico de linha aqui</div>

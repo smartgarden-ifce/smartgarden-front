@@ -371,6 +371,64 @@
   height: 260px;
 }
 
+.chart-markers {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.chart-marker {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+}
+
+.chart-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(31, 44, 31, 0.18);
+}
+
+.chart-value {
+  position: absolute;
+  left: 50%;
+  min-width: max-content;
+  padding: 0.18rem 0.38rem;
+  border: 1px solid rgba(90, 106, 84, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.94);
+  box-shadow: 0 4px 12px rgba(70, 57, 37, 0.08);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.temperature-marker .chart-dot {
+  background: var(--warm);
+}
+
+.temperature-marker .chart-value {
+  bottom: calc(100% + 0.35rem);
+  color: var(--warm);
+}
+
+.humidity-marker .chart-dot {
+  background: var(--water);
+}
+
+.humidity-marker .chart-value {
+  top: calc(100% + 0.35rem);
+  color: var(--water);
+}
+
 .chart-axis {
   stroke: rgba(99, 113, 100, 0.45);
   stroke-width: 1.1;
@@ -724,5 +782,10 @@
 
   .readings-table {
     min-width: 620px;
+  }
+
+  .chart-value {
+    font-size: 0.64rem;
+    padding-inline: 0.28rem;
   }
 }

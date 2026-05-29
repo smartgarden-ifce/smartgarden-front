@@ -17,6 +17,13 @@ interface SelectOption<T> {
   value: T;
 }
 
+interface ChartMarker {
+  key: string;
+  left: number;
+  top: number;
+  valueLabel: string;
+}
+
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
@@ -86,6 +93,8 @@ export class DashboardPageComponent {
 
   readonly temperatureChartPoints = computed(() => this.buildChartPoints(this.historicalReadings(), 'temperatureC'));
   readonly humidityChartPoints = computed(() => this.buildChartPoints(this.historicalReadings(), 'humidityPercent'));
+  readonly temperatureChartMarkers = computed(() => this.buildChartMarkers(this.historicalReadings(), 'temperatureC', '°C'));
+  readonly humidityChartMarkers = computed(() => this.buildChartMarkers(this.historicalReadings(), 'humidityPercent', '%'));
   readonly chartReady = computed(() => this.historicalReadings().length >= 2);
   readonly chartLabels = computed(() => {
     const readings = this.historicalReadings();
@@ -280,10 +289,39 @@ export class DashboardPageComponent {
     const range = Math.max(max - min, 1);
 
     return values.map((value, index) => {
-      const x = readings.length === 1 ? 160 : (index / (readings.length - 1)) * 320;
-      const y = 110 - ((value - min) / range) * 70;
+      const { x, y } = this.getChartCoordinates(value, index, values.length, min, range);
       return `${x.toFixed(2)},${y.toFixed(2)}`;
     }).join(' ');
+  }
+
+  private buildChartMarkers(readings: Reading[], field: 'temperatureC' | 'humidityPercent', unit: string): ChartMarker[] {
+    if (readings.length === 0) {
+      return [];
+    }
+
+    const values = readings.map((reading) => reading[field]);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = Math.max(max - min, 1);
+
+    return readings.map((reading, index) => {
+      const value = reading[field];
+      const { x, y } = this.getChartCoordinates(value, index, values.length, min, range);
+
+      return {
+        key: `${field}-${reading.id}`,
+        left: (x / 320) * 100,
+        top: (y / 130) * 100,
+        valueLabel: `${value.toFixed(1)} ${unit}`
+      };
+    });
+  }
+
+  private getChartCoordinates(value: number, index: number, total: number, min: number, range: number): { x: number; y: number } {
+    const x = total === 1 ? 160 : 18 + (index / (total - 1)) * 284;
+    const y = 104 - ((value - min) / range) * 68;
+
+    return { x, y };
   }
 
   private loadInitialData(): void {
