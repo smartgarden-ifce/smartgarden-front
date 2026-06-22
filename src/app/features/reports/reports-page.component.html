@@ -1,0 +1,182 @@
+<div class="report-shell">
+  <main class="report-frame">
+    <header class="report-topbar no-print">
+      <a routerLink="/" class="brand-link">
+        <img src="brand/smartgarden-logo.png" alt="Logo SmartGarden" />
+        <span>SmartGarden</span>
+      </a>
+      <a routerLink="/" class="back-link"><i class="pi pi-arrow-left"></i> Dashboard</a>
+    </header>
+
+    <section class="report-content">
+      <div class="report-title">
+        <div>
+          <span class="eyebrow">Análise ambiental</span>
+          <h1>Relatório do jardim</h1>
+          <p>Indicadores e histórico de um sensor em um período de até 31 dias.</p>
+        </div>
+        <div class="print-actions no-print">
+          <p-button
+            label="Baixar PDF"
+            icon="pi pi-download"
+            [disabled]="!report()"
+            [loading]="pdfGenerating()"
+            (onClick)="downloadPdf()" />
+        </div>
+      </div>
+
+      <section class="filters no-print" aria-label="Filtros do relatório">
+        <label>
+          <span>Dispositivo</span>
+          <p-select
+            [options]="deviceOptions()"
+            [ngModel]="selectedDeviceCode()"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            (ngModelChange)="onDeviceChange($event)" />
+        </label>
+        <label>
+          <span>Início</span>
+          <p-datepicker
+            [ngModel]="startAt()"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [showButtonBar]="true"
+            [fluid]="true"
+            [maxDate]="endAt() || today"
+            appendTo="body"
+            (ngModelChange)="onStartChange($event)" />
+        </label>
+        <label>
+          <span>Fim</span>
+          <p-datepicker
+            [ngModel]="endAt()"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [showButtonBar]="true"
+            [fluid]="true"
+            [minDate]="startAt() || undefined"
+            [maxDate]="today"
+            appendTo="body"
+            (ngModelChange)="onEndChange($event)" />
+        </label>
+        <p-button label="Gerar relatório" icon="pi pi-file" [loading]="loading()" (onClick)="generateReport()" />
+      </section>
+
+      @if (errorMessage(); as error) {
+        <div class="feedback no-print"><p-message severity="error" [text]="error"></p-message></div>
+      }
+
+      @if (report(); as currentReport) {
+        <section class="print-heading">
+          <div>
+            <strong>{{ currentReport.deviceName }}</strong>
+            <span>{{ currentReport.location || currentReport.deviceCode }}</span>
+          </div>
+          <div>
+            <span>{{ currentReport.windowStart | date:'dd/MM/yyyy' }} até {{ currentReport.windowEnd | date:'dd/MM/yyyy' }}</span>
+            <small>Gerado em {{ currentReport.generatedAt | date:'dd/MM/yyyy HH:mm' }}</small>
+          </div>
+        </section>
+
+        <section class="summary-grid">
+          <article>
+            <span>Leituras</span>
+            <strong>{{ currentReport.summary.totalReadings }}</strong>
+            <small>No período selecionado</small>
+          </article>
+          <article>
+            <span>Temperatura média</span>
+            <strong>{{ currentReport.summary.averageTemperatureC == null ? '--' : (currentReport.summary.averageTemperatureC | number:'1.1-2') }} °C</strong>
+            <small>Mín. {{ currentReport.summary.minimumTemperatureC ?? '--' }} · Máx. {{ currentReport.summary.maximumTemperatureC ?? '--' }}</small>
+          </article>
+          <article>
+            <span>Umidade média</span>
+            <strong>{{ currentReport.summary.averageHumidityPercent == null ? '--' : (currentReport.summary.averageHumidityPercent | number:'1.1-2') }} %</strong>
+            <small>Mín. {{ currentReport.summary.minimumHumidityPercent ?? '--' }} · Máx. {{ currentReport.summary.maximumHumidityPercent ?? '--' }}</small>
+          </article>
+          <article class="adequate-card">
+            <span>Condições adequadas</span>
+            <strong>{{ currentReport.summary.adequatePercentage == null ? '--' : (currentReport.summary.adequatePercentage | number:'1.0-1') }}%</strong>
+            <small>{{ currentReport.summary.adequateReadings }} leituras adequadas</small>
+          </article>
+        </section>
+
+        <section class="report-panel diagnosis-panel">
+          <div>
+            <span class="section-label">Diagnóstico do período</span>
+            <h2>{{ diagnosis() }}</h2>
+          </div>
+          <strong>{{ currentReport.totalExceptions }} exceções</strong>
+        </section>
+
+        <details class="report-panel criteria-panel" open>
+          <summary>Como interpretar os dados</summary>
+          <div class="criteria-grid">
+            <p><strong>Temperatura:</strong> {{ currentReport.criteria.temperatureDescription }}</p>
+            <p><strong>Umidade:</strong> {{ currentReport.criteria.humidityDescription }}</p>
+            <p><strong>Ambiente adequado:</strong> {{ currentReport.criteria.environmentDescription }}</p>
+            <p><strong>Importante:</strong> “Adequado” descreve a faixa da leitura; estabilidade exigiria analisar sua variação no tempo.</p>
+          </div>
+        </details>
+
+        <section class="report-panel exceptions-panel">
+          <div class="panel-title">
+            <div><span class="section-label">Fora das faixas</span><h2>Exceções recentes</h2></div>
+            @if (currentReport.exceptionsTruncated) { <small>Exibindo as 50 mais recentes</small> }
+          </div>
+          <div class="table-shell">
+            <table>
+              <thead><tr><th>Data e hora</th><th>Temperatura</th><th>Umidade</th><th>Diagnóstico</th></tr></thead>
+              <tbody>
+                @for (exception of currentReport.exceptions; track exception.readingId) {
+                  <tr>
+                    <td>{{ exception.recordedAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                    <td>{{ exception.temperatureC | number:'1.1-1' }} °C</td>
+                    <td>{{ exception.humidityPercent | number:'1.1-1' }} %</td>
+                    <td>{{ exception.temperatureStatus }} / {{ exception.humidityStatus }}</td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="4">Nenhuma exceção encontrada no período.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="report-panel history-panel no-print">
+          <div class="panel-title">
+            <div><span class="section-label">Consulta detalhada</span><h2>Histórico completo</h2></div>
+            <small>{{ readingsPage()?.totalElements ?? 0 }} registros</small>
+          </div>
+          @if (readingsLoading()) { <p-message severity="info" text="Atualizando histórico..."></p-message> }
+          <div class="table-shell">
+            <table>
+              <thead><tr><th>Data e hora</th><th>Temperatura</th><th>Umidade</th><th>Status</th></tr></thead>
+              <tbody>
+                @for (reading of readingsPage()?.content ?? []; track reading.id) {
+                  <tr>
+                    <td>{{ reading.recordedAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                    <td>{{ reading.temperatureC | number:'1.1-1' }} °C</td>
+                    <td>{{ reading.humidityPercent | number:'1.1-1' }} %</td>
+                    <td><span class="status" [ngClass]="readingStatusClass(reading, currentReport.criteria)">{{ temperatureStatus(reading.temperatureC, currentReport.criteria) }} / {{ humidityStatus(reading.humidityPercent, currentReport.criteria) }}</span></td>
+                  </tr>
+                } @empty { <tr><td colspan="4">Nenhuma leitura encontrada.</td></tr> }
+              </tbody>
+            </table>
+          </div>
+          @if (readingsPage(); as page) {
+            <div class="pagination">
+              <span>Página {{ page.page + 1 }} de {{ page.totalPages }}</span>
+              <div>
+                <p-button label="Anterior" severity="secondary" [outlined]="true" [disabled]="page.first" (onClick)="goToPreviousPage()" />
+                <p-button label="Próxima" severity="secondary" [outlined]="true" [disabled]="page.last" (onClick)="goToNextPage()" />
+              </div>
+            </div>
+          }
+        </section>
+      }
+    </section>
+  </main>
+</div>

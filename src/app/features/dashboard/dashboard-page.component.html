@@ -12,6 +12,7 @@
       </div>
 
       <div class="topbar-side">
+        <a routerLink="/relatorios" class="report-link"><i class="pi pi-file"></i> Relatórios</a>
         <div class="connection-pill" [class.is-live]="primaryDeviceSummary()?.active">
           <span class="connection-dot"></span>
           <span>{{ sensorConnectionLabel(primaryDeviceSummary()?.active) }}</span>
@@ -52,8 +53,8 @@
               <h1>Jardim em tempo real</h1>
               <p>{{ primaryDeviceSummary()?.location || 'Monitoramento ambiental do jardim' }}</p>
               <div class="reference-strip">
-                <span>Faixa térmica 20-30 °C</span>
-                <span>Umidade ideal 40-70%</span>
+                <span>Faixa térmica {{ dashboardSummary.criteria.temperatureMinC }}-{{ dashboardSummary.criteria.temperatureMaxC }} °C</span>
+                <span>Umidade ideal {{ dashboardSummary.criteria.humidityMinPercent }}-{{ dashboardSummary.criteria.humidityMaxPercent }}%</span>
                 <span>{{ primaryDeviceSummary()?.deviceCode || 'ESP32' }}</span>
               </div>
             </div>
@@ -136,6 +137,16 @@
             </article>
           </section>
 
+          <details class="panel-card criteria-panel">
+            <summary>Como interpretar os dados</summary>
+            <div class="criteria-copy">
+              <p><strong>Temperatura:</strong> {{ dashboardSummary.criteria.temperatureDescription }}</p>
+              <p><strong>Umidade:</strong> {{ dashboardSummary.criteria.humidityDescription }}</p>
+              <p><strong>Ambiente adequado:</strong> {{ dashboardSummary.criteria.environmentDescription }}</p>
+              <p><strong>Importante:</strong> “Adequado” descreve a faixa atual; estabilidade exige analisar a variação ao longo do tempo.</p>
+            </div>
+          </details>
+
           <section class="middle-grid">
             <article class="panel-card chart-panel">
               <div class="panel-header">
@@ -196,12 +207,12 @@
               </div>
 
               <div class="comfort-ranges">
-                <span>Frio &lt; 20 °C</span>
-                <span>Agradável 20-30 °C</span>
-                <span>Quente ≥ 30 °C</span>
-                <span>Seco &lt; 40%</span>
-                <span>Confortável 40-70%</span>
-                <span>Úmido &gt; 70%</span>
+                <span>Frio &lt; {{ dashboardSummary.criteria.temperatureMinC }} °C</span>
+                <span>Agradável {{ dashboardSummary.criteria.temperatureMinC }}-{{ dashboardSummary.criteria.temperatureMaxC }} °C</span>
+                <span>Quente &gt; {{ dashboardSummary.criteria.temperatureMaxC }} °C</span>
+                <span>Seco &lt; {{ dashboardSummary.criteria.humidityMinPercent }}%</span>
+                <span>Normal {{ dashboardSummary.criteria.humidityMinPercent }}-{{ dashboardSummary.criteria.humidityMaxPercent }}%</span>
+                <span>Úmido &gt; {{ dashboardSummary.criteria.humidityMaxPercent }}%</span>
               </div>
 
               <div class="chart-timeline">

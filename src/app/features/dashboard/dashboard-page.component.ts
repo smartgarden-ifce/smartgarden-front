@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
@@ -30,6 +31,7 @@ interface ChartMarker {
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     DatePipe,
     DecimalPipe,
     ButtonModule,
@@ -118,6 +120,8 @@ export class DashboardPageComponent {
     return (currentSummary.activeDevices / currentSummary.totalDevices) * 100;
   });
 
+  readonly criteria = computed(() => this.summary()?.criteria ?? null);
+
   constructor() {
     this.loadInitialData();
   }
@@ -159,11 +163,16 @@ export class DashboardPageComponent {
       return 'Sem leitura';
     }
 
-    if (temperatureC >= 30) {
+    const criteria = this.criteria();
+    if (!criteria) {
+      return 'Critério indisponível';
+    }
+
+    if (temperatureC > criteria.temperatureMaxC) {
       return 'Ambiente quente';
     }
 
-    if (temperatureC <= 20) {
+    if (temperatureC < criteria.temperatureMinC) {
       return 'Ambiente frio';
     }
 
@@ -175,11 +184,16 @@ export class DashboardPageComponent {
       return 'Umidade indisponível';
     }
 
-    if (humidityPercent < 40) {
+    const criteria = this.criteria();
+    if (!criteria) {
+      return 'Critério indisponível';
+    }
+
+    if (humidityPercent < criteria.humidityMinPercent) {
       return 'Umidade baixa';
     }
 
-    if (humidityPercent > 70) {
+    if (humidityPercent > criteria.humidityMaxPercent) {
       return 'Umidade alta';
     }
 
@@ -196,36 +210,38 @@ export class DashboardPageComponent {
 
   environmentToneClass(): string {
     const latest = this.latestReading();
-    if (!latest) {
+    const criteria = this.criteria();
+    if (!latest || !criteria) {
       return 'tone-neutral';
     }
 
-    if (latest.temperatureC >= 30) {
+    if (latest.temperatureC > criteria.temperatureMaxC) {
       return 'tone-warm';
     }
 
-    if (latest.temperatureC <= 20) {
+    if (latest.temperatureC < criteria.temperatureMinC) {
       return 'tone-cool';
     }
 
-    return 'tone-stable';
+    return 'tone-adequate';
   }
 
   humidityToneClass(): string {
     const latest = this.latestReading();
-    if (!latest) {
+    const criteria = this.criteria();
+    if (!latest || !criteria) {
       return 'tone-neutral';
     }
 
-    if (latest.humidityPercent > 70) {
+    if (latest.humidityPercent > criteria.humidityMaxPercent) {
       return 'tone-water';
     }
 
-    if (latest.humidityPercent < 40) {
+    if (latest.humidityPercent < criteria.humidityMinPercent) {
       return 'tone-dry';
     }
 
-    return 'tone-stable';
+    return 'tone-adequate';
   }
 
   actionRecommendationLabel(): string {
@@ -234,23 +250,29 @@ export class DashboardPageComponent {
       return 'Aguardando leitura';
     }
 
-    if (latest.temperatureC >= 30 && latest.humidityPercent < 40) {
+    const criteria = this.criteria();
+    if (!criteria) {
+      return 'Critério indisponível';
+    }
+
+    if (latest.temperatureC > criteria.temperatureMaxC
+      && latest.humidityPercent < criteria.humidityMinPercent) {
       return 'Sombrear e irrigar';
     }
 
-    if (latest.temperatureC >= 30) {
+    if (latest.temperatureC > criteria.temperatureMaxC) {
       return 'Reduzir calor';
     }
 
-    if (latest.humidityPercent < 40) {
+    if (latest.humidityPercent < criteria.humidityMinPercent) {
       return 'Verificar irrigação';
     }
 
-    if (latest.humidityPercent > 70) {
+    if (latest.humidityPercent > criteria.humidityMaxPercent) {
       return 'Aumentar ventilação';
     }
 
-    if (latest.temperatureC <= 20) {
+    if (latest.temperatureC < criteria.temperatureMinC) {
       return 'Monitorar frio';
     }
 
@@ -259,27 +281,28 @@ export class DashboardPageComponent {
 
   actionToneClass(): string {
     const latest = this.latestReading();
-    if (!latest) {
+    const criteria = this.criteria();
+    if (!latest || !criteria) {
       return 'tone-neutral';
     }
 
-    if (latest.temperatureC >= 30) {
+    if (latest.temperatureC > criteria.temperatureMaxC) {
       return 'tone-warm';
     }
 
-    if (latest.humidityPercent < 40) {
+    if (latest.humidityPercent < criteria.humidityMinPercent) {
       return 'tone-dry';
     }
 
-    if (latest.humidityPercent > 70) {
+    if (latest.humidityPercent > criteria.humidityMaxPercent) {
       return 'tone-water';
     }
 
-    if (latest.temperatureC <= 20) {
+    if (latest.temperatureC < criteria.temperatureMinC) {
       return 'tone-cool';
     }
 
-    return 'tone-stable';
+    return 'tone-adequate';
   }
 
   sensorToneClass(): string {
@@ -306,11 +329,18 @@ export class DashboardPageComponent {
   }
 
   tableStatusClass(reading: Reading): string {
-    if (reading.temperatureC >= 30 || reading.humidityPercent > 70) {
+    const criteria = this.criteria();
+    if (!criteria) {
+      return 'is-normal';
+    }
+
+    if (reading.temperatureC < criteria.temperatureMinC
+      || reading.temperatureC > criteria.temperatureMaxC
+      || reading.humidityPercent > criteria.humidityMaxPercent) {
       return 'is-warm';
     }
 
-    if (reading.humidityPercent < 40) {
+    if (reading.humidityPercent < criteria.humidityMinPercent) {
       return 'is-dry';
     }
 

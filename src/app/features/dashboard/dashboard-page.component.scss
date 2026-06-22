@@ -84,7 +84,8 @@
 }
 
 .connection-pill,
-.admin-chip {
+.admin-chip,
+.report-link {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
@@ -95,6 +96,10 @@
   background: #fffdf8;
   color: var(--text);
   font-size: 0.9rem;
+}
+
+.report-link {
+  text-decoration: none;
 }
 
 .connection-dot {
@@ -272,7 +277,7 @@
   background: var(--water-soft);
 }
 
-.metric-card.tone-stable .metric-icon,
+.metric-card.tone-adequate .metric-icon,
 .metric-card.tone-online .metric-icon {
   color: var(--success);
   background: var(--success-soft);
@@ -301,7 +306,7 @@
 }
 
 .sensor-card strong,
-.action-card.tone-stable strong {
+.action-card.tone-adequate strong {
   color: var(--success);
 }
 
@@ -324,6 +329,35 @@
 
 .panel-card {
   padding: 1.2rem;
+}
+
+.criteria-panel {
+  margin-bottom: 1rem;
+}
+
+.criteria-panel summary {
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.criteria-copy {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.criteria-copy p {
+  margin: 0;
+  padding: 0.8rem;
+  border-radius: 14px;
+  background: var(--panel-soft);
+  color: var(--muted);
+}
+
+.criteria-copy strong {
+  color: var(--text);
 }
 
 .panel-header {
@@ -825,7 +859,8 @@
   .loading-metrics,
   .toolbar,
   .info-footer,
-  .comfort-ranges {
+  .comfort-ranges,
+  .criteria-copy {
     grid-template-columns: 1fr;
   }
 
