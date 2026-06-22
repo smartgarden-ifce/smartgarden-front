@@ -16,8 +16,7 @@ import {
   EnvironmentalCriteria,
   EnvironmentalReport,
   PageResponse,
-  Reading,
-  ReportChartPoint
+  Reading
 } from '../../core/models/smartgarden.models';
 import { SmartgardenApiService } from '../../core/services/smartgarden-api.service';
 
@@ -62,16 +61,6 @@ export class ReportsPageComponent {
     label: device.name,
     value: device.deviceCode
   })));
-  readonly temperatureChartPoints = computed(() => this.buildChartPoints('averageTemperatureC'));
-  readonly humidityChartPoints = computed(() => this.buildChartPoints('averageHumidityPercent'));
-  readonly chartLabels = computed(() => {
-    const points = this.report()?.chartPoints ?? [];
-    if (points.length === 0) {
-      return ['--', '--', '--'];
-    }
-    return [points[0], points[Math.floor(points.length / 2)], points[points.length - 1]]
-      .map((point) => point?.recordedAt ?? '');
-  });
   readonly diagnosis = computed(() => {
     const summary = this.report()?.summary;
     if (!summary || summary.totalReadings === 0 || summary.adequatePercentage == null) {
@@ -169,7 +158,6 @@ export class ReportsPageComponent {
       const document = new jsPDF({ unit: 'mm', format: 'a4' });
       this.drawPdfHeader(document, report);
       let cursorY = this.drawPdfSummary(document, report);
-      cursorY = this.drawPdfChart(document, report, cursorY);
       cursorY = this.drawPdfCriteria(document, report, cursorY);
 
       if (report.exceptions.length > 0) {
@@ -300,21 +288,6 @@ export class ReportsPageComponent {
     return null;
   }
 
-  private buildChartPoints(field: keyof Pick<ReportChartPoint, 'averageTemperatureC' | 'averageHumidityPercent'>): string {
-    const points = this.report()?.chartPoints ?? [];
-    if (points.length === 0) {
-      return '';
-    }
-    const values = points.map((point) => point[field]);
-    const min = Math.min(...values);
-    const range = Math.max(Math.max(...values) - min, 1);
-    return values.map((value, index) => {
-      const x = points.length === 1 ? 360 : 24 + (index / (points.length - 1)) * 672;
-      const y = 190 - ((value - min) / range) * 150;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    }).join(' ');
-  }
-
   private toOffsetIso(date: Date): string {
     const offsetMinutes = -date.getTimezoneOffset();
     const sign = offsetMinutes >= 0 ? '+' : '-';
@@ -369,46 +342,6 @@ export class ReportsPageComponent {
     document.setFontSize(9);
     document.text(document.splitTextToSize(this.diagnosis(), 180), 14, 74);
     return 84;
-  }
-
-  private drawPdfChart(document: JsPdfDocument, report: EnvironmentalReport, startY: number): number {
-    if (report.chartPoints.length < 2) {
-      return startY;
-    }
-    document.setFontSize(10);
-    document.setFont('helvetica', 'bold');
-    document.text('Tendência ambiental', 14, startY);
-    const top = startY + 5;
-    const height = 34;
-    const width = 182;
-    document.setDrawColor(217, 212, 199);
-    document.rect(14, top, width, height);
-    this.drawPdfSeries(document, report.chartPoints.map((point) => point.averageTemperatureC), 14, top, width, height, [201, 111, 45]);
-    this.drawPdfSeries(document, report.chartPoints.map((point) => point.averageHumidityPercent), 14, top, width, height, [46, 125, 141]);
-    document.setFont('helvetica', 'normal');
-    return top + height + 8;
-  }
-
-  private drawPdfSeries(
-    document: JsPdfDocument,
-    values: number[],
-    left: number,
-    top: number,
-    width: number,
-    height: number,
-    color: [number, number, number]
-  ): void {
-    const minimum = Math.min(...values);
-    const range = Math.max(Math.max(...values) - minimum, 1);
-    document.setDrawColor(...color);
-    document.setLineWidth(0.6);
-    for (let index = 1; index < values.length; index++) {
-      const previousX = left + ((index - 1) / (values.length - 1)) * width;
-      const currentX = left + (index / (values.length - 1)) * width;
-      const previousY = top + height - ((values[index - 1] - minimum) / range) * height;
-      const currentY = top + height - ((values[index] - minimum) / range) * height;
-      document.line(previousX, previousY, currentX, currentY);
-    }
   }
 
   private drawPdfCriteria(document: JsPdfDocument, report: EnvironmentalReport, startY: number): number {

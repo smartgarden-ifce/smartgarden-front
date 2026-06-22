@@ -54,7 +54,7 @@ Endpoints usados:
 
 Acesse `http://localhost:4200/relatorios` ou use o link **Relatórios** no dashboard.
 
-A página permite selecionar um sensor e um período de até 31 dias usando os componentes Select e DatePicker do PrimeNG. A tela apresenta indicadores, gráfico, exceções e o histórico completo paginado. O botão **Baixar PDF** gera diretamente um documento compacto com resumo, gráfico, critérios e exceções, sem incluir todo o histórico paginado.
+A página permite selecionar um sensor e um período de até 31 dias usando os componentes Select e DatePicker do PrimeNG. A tela apresenta indicadores, diagnóstico, exceções e o histórico completo paginado. O botão **Baixar PDF** gera diretamente um documento compacto com resumo, diagnóstico, critérios e exceções, sem incluir todo o histórico paginado.
 
 Os limites de temperatura e umidade vêm do backend; o frontend não mantém uma segunda configuração dessas faixas.
 

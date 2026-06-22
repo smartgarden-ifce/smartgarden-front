@@ -65,7 +65,7 @@
             appendTo="body"
             (ngModelChange)="onEndChange($event)" />
         </label>
-        <p-button label="Gerar relatório" icon="pi pi-chart-line" [loading]="loading()" (onClick)="generateReport()" />
+        <p-button label="Gerar relatório" icon="pi pi-file" [loading]="loading()" (onClick)="generateReport()" />
       </section>
 
       @if (errorMessage(); as error) {
@@ -113,28 +113,6 @@
             <h2>{{ diagnosis() }}</h2>
           </div>
           <strong>{{ currentReport.totalExceptions }} exceções</strong>
-        </section>
-
-        <section class="report-panel chart-panel">
-          <div class="panel-title">
-            <div><span class="section-label">Série temporal</span><h2>Temperatura e umidade</h2></div>
-            <div class="legend"><span class="temperature">Temperatura</span><span class="humidity">Umidade</span></div>
-          </div>
-          @if (currentReport.chartPoints.length > 0) {
-            <div class="chart-box">
-              <svg viewBox="0 0 720 220" preserveAspectRatio="none" aria-label="Gráfico ambiental do período">
-                <line x1="20" y1="190" x2="700" y2="190"></line>
-                <line x1="20" y1="40" x2="700" y2="40"></line>
-                <polyline [attr.points]="temperatureChartPoints()" class="temperature-line"></polyline>
-                <polyline [attr.points]="humidityChartPoints()" class="humidity-line"></polyline>
-              </svg>
-            </div>
-            <div class="chart-labels">
-              @for (label of chartLabels(); track $index) { <span>{{ label | date:'dd/MM HH:mm' }}</span> }
-            </div>
-          } @else {
-            <div class="empty-state">Nenhuma leitura encontrada no período.</div>
-          }
         </section>
 
         <details class="report-panel criteria-panel" open>
