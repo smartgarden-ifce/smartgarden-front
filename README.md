@@ -9,6 +9,9 @@ Frontend inicial do SmartGarden em `Angular 19`, padronizado com `pnpm`.
 - lista da última leitura por dispositivo
 - tabela paginada de leituras recentes
 - filtro por dispositivo
+- página de relatório ambiental por dispositivo e período
+- download direto do relatório em PDF
+- critérios ambientais documentados no dashboard e no relatório
 
 ## API esperada
 
@@ -45,6 +48,15 @@ Endpoints usados:
 - `GET /api/dashboard/summary?hours=24`
 - `GET /api/devices`
 - `GET /api/readings?page=0&size=10`
+- `GET /api/reports/environmental?deviceCode=...&startAt=...&endAt=...`
+
+## Relatórios
+
+Acesse `http://localhost:4200/relatorios` ou use o link **Relatórios** no dashboard.
+
+A página permite selecionar um sensor e um período de até 31 dias usando os componentes Select e DatePicker do PrimeNG. A tela apresenta indicadores, gráfico, exceções e o histórico completo paginado. O botão **Baixar PDF** gera diretamente um documento compacto com resumo, gráfico, critérios e exceções, sem incluir todo o histórico paginado.
+
+Os limites de temperatura e umidade vêm do backend; o frontend não mantém uma segunda configuração dessas faixas.
 
 ## Build
 
