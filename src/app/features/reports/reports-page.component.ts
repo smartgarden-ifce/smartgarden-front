@@ -101,8 +101,8 @@ export class ReportsPageComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
     const deviceCode = this.selectedDeviceCode();
-    const startAt = this.toOffsetIso(this.startAt()!);
-    const endAt = this.toOffsetIso(this.endAt()!);
+    const startAt = this.toOffsetIso(this.startAt()!, false);
+    const endAt = this.toOffsetIso(this.endAt()!, true);
     forkJoin({
       report: this.api.getEnvironmentalReport(deviceCode, startAt, endAt),
       readings: this.api.getReadings({
@@ -278,17 +278,25 @@ export class ReportsPageComponent {
     if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
       return 'Informe o início e o fim do período.';
     }
-    const duration = end.getTime() - start.getTime();
-    if (duration <= 0) {
+    const startDay = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDay = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+    const elapsedDays = (endDay - startDay) / (24 * 60 * 60 * 1000);
+    if (elapsedDays < 0) {
       return 'A data inicial deve ser anterior à data final.';
     }
-    if (duration > 31 * 24 * 60 * 60 * 1000) {
+    if (elapsedDays >= 31) {
       return 'O período máximo do relatório é de 31 dias.';
     }
     return null;
   }
 
-  private toOffsetIso(date: Date): string {
+  private toOffsetIso(value: Date, endOfDay: boolean): string {
+    const date = new Date(value);
+    if (endOfDay) {
+      date.setHours(23, 59, 59, 999);
+    } else {
+      date.setHours(0, 0, 0, 0);
+    }
     const offsetMinutes = -date.getTimezoneOffset();
     const sign = offsetMinutes >= 0 ? '+' : '-';
     const absolute = Math.abs(offsetMinutes);
@@ -310,7 +318,7 @@ export class ReportsPageComponent {
     document.text('Relatório ambiental', 14, 21);
     document.setFontSize(9);
     document.text(report.deviceName, 196, 12, { align: 'right' });
-    document.text(`${this.formatDateTime(report.windowStart)} a ${this.formatDateTime(report.windowEnd)}`, 196, 19, { align: 'right' });
+    document.text(`${this.formatDate(report.windowStart)} a ${this.formatDate(report.windowEnd)}`, 196, 19, { align: 'right' });
   }
 
   private drawPdfSummary(document: JsPdfDocument, report: EnvironmentalReport): number {
@@ -379,6 +387,10 @@ export class ReportsPageComponent {
       dateStyle: 'short',
       timeStyle: 'short'
     }).format(new Date(value));
+  }
+
+  private formatDate(value: string): string {
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value));
   }
 
   private toErrorMessage(error: unknown): string {

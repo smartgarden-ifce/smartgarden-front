@@ -41,8 +41,6 @@
           <p-datepicker
             [ngModel]="startAt()"
             dateFormat="dd/mm/yy"
-            [showTime]="true"
-            hourFormat="24"
             [showIcon]="true"
             [showButtonBar]="true"
             [fluid]="true"
@@ -55,8 +53,6 @@
           <p-datepicker
             [ngModel]="endAt()"
             dateFormat="dd/mm/yy"
-            [showTime]="true"
-            hourFormat="24"
             [showIcon]="true"
             [showButtonBar]="true"
             [fluid]="true"
@@ -79,7 +75,7 @@
             <span>{{ currentReport.location || currentReport.deviceCode }}</span>
           </div>
           <div>
-            <span>{{ currentReport.windowStart | date:'dd/MM/yyyy HH:mm' }} até {{ currentReport.windowEnd | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span>{{ currentReport.windowStart | date:'dd/MM/yyyy' }} até {{ currentReport.windowEnd | date:'dd/MM/yyyy' }}</span>
             <small>Gerado em {{ currentReport.generatedAt | date:'dd/MM/yyyy HH:mm' }}</small>
           </div>
         </section>
