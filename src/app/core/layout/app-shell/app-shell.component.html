@@ -1,0 +1,47 @@
+<div class="app-shell" [class.menu-open]="menuOpen()">
+  <button
+    type="button"
+    class="menu-backdrop"
+    aria-label="Fechar menu"
+    (click)="closeMenu()"></button>
+
+  <aside class="sidebar" id="main-navigation" aria-label="Navegação principal">
+    <a routerLink="/dashboard" class="brand-link" (click)="closeMenu()">
+      <img src="brand/smartgardenname-logo.png" alt="SmartGarden" />
+    </a>
+
+    <nav>
+      <span class="nav-label">Navegação</span>
+      @for (item of navigation; track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          ariaCurrentWhenActive="page"
+          (click)="closeMenu()">
+          <i [class]="item.icon" aria-hidden="true"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <div class="workspace">
+    <header class="mobile-header no-print">
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Abrir menu"
+        aria-controls="main-navigation"
+        [attr.aria-expanded]="menuOpen()"
+        (click)="toggleMenu()">
+        <i class="pi pi-bars" aria-hidden="true"></i>
+      </button>
+      <img src="brand/smartgardenname-logo.png" alt="SmartGarden" />
+    </header>
+
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

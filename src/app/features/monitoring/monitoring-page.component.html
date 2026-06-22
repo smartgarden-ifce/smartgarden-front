@@ -1,0 +1,68 @@
+<header class="page-header">
+  <div><span class="page-eyebrow">Monitoramento</span><h1>Telemetria ambiental</h1><p>Analise a variação de temperatura e umidade de cada sensor.</p></div>
+  @if (latestReading(); as latest) {
+    <div class="latest-badges"><span>{{ latest.temperatureC | number:'1.1-1' }} °C</span><span>{{ latest.humidityPercent | number:'1.1-1' }}%</span></div>
+  }
+</header>
+
+@if (devices().length || loading()) {
+  <section class="toolbar-card" aria-label="Filtros do monitoramento">
+    <label><span>Dispositivo</span><p-select [options]="deviceOptions()" [ngModel]="selectedDeviceCode()" optionLabel="label" optionValue="value" appendTo="body" (ngModelChange)="onDeviceChange($event)" /></label>
+    <label><span>Janela</span><p-select [options]="hourOptions" [ngModel]="selectedHours()" optionLabel="label" optionValue="value" appendTo="body" (ngModelChange)="onHoursChange($event)" /></label>
+    <p-button label="Atualizar" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="refresh()" />
+  </section>
+}
+
+@if (errorMessage(); as error) { <div class="page-feedback"><p-message severity="error" [text]="error"></p-message></div> }
+
+@if (loading()) {
+  <section class="page-panel loading-panel"><p-skeleton width="12rem" /><p-skeleton width="100%" height="300px" /></section>
+} @else if (!devices().length) {
+  <section class="page-panel empty-state"><i class="pi pi-microchip"></i><h2>Nenhum dispositivo cadastrado</h2><p>Cadastre um sensor na página Dispositivos para iniciar o monitoramento.</p></section>
+} @else {
+  <section class="page-panel chart-panel">
+    <div class="panel-heading">
+      <div><span class="page-eyebrow">Últimas {{ selectedHours() }} horas</span><h2>Tendência de {{ history()?.deviceName }}</h2></div>
+      <span>{{ history()?.totalPoints ?? 0 }} pontos</span>
+    </div>
+    @if (chartReady()) {
+      <div class="chart-box">
+        <div class="chart-grid"></div>
+        <svg viewBox="0 0 320 130" preserveAspectRatio="none" aria-label="Gráfico de temperatura e umidade">
+          <polyline [attr.points]="temperaturePoints()" class="temperature-line"></polyline>
+          <polyline [attr.points]="humidityPoints()" class="humidity-line"></polyline>
+        </svg>
+      </div>
+      <div class="chart-timeline"><span>{{ timelineLabels()[0] }}</span><span>{{ timelineLabels()[1] }}</span><span>{{ timelineLabels()[2] }}</span></div>
+    } @else {
+      <div class="chart-empty"><i class="pi pi-chart-line"></i><span>São necessárias pelo menos duas leituras para exibir a tendência.</span></div>
+    }
+    <div class="legend"><span><i class="temperature"></i>Temperatura</span><span><i class="humidity"></i>Umidade</span></div>
+  </section>
+
+  <section class="page-panel table-panel">
+    <div class="panel-heading">
+      <div><span class="page-eyebrow">Histórico detalhado</span><h2>Registro de telemetria</h2></div>
+      <span>{{ readingsPage()?.totalElements ?? 0 }} registros</span>
+    </div>
+    @if (tableLoading()) { <p-message severity="info" text="Atualizando registros..."></p-message> }
+    <div class="table-shell">
+      <table>
+        <thead><tr><th>Data e hora</th><th>Temperatura</th><th>Umidade</th><th>Diagnóstico</th></tr></thead>
+        <tbody>
+          @for (reading of readingsPage()?.content ?? []; track reading.id) {
+            <tr>
+              <td>{{ reading.recordedAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+              <td>{{ reading.temperatureC | number:'1.1-1' }} °C</td>
+              <td>{{ reading.humidityPercent | number:'1.1-1' }}%</td>
+              <td><span class="reading-status" [ngClass]="readingStatusClass(reading)">{{ temperatureStatus(reading.temperatureC) }} / {{ humidityStatus(reading.humidityPercent) }}</span></td>
+            </tr>
+          } @empty { <tr><td colspan="4">Nenhuma leitura encontrada nesta janela.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+    @if (readingsPage(); as page) {
+      <div class="pagination"><span>Página {{ page.page + 1 }} de {{ page.totalPages || 1 }}</span><div><p-button label="Anterior" severity="secondary" [outlined]="true" [disabled]="page.first" (onClick)="goToPreviousPage()" /><p-button label="Próxima" severity="secondary" [outlined]="true" [disabled]="page.last" (onClick)="goToNextPage()" /></div></div>
+    }
+  </section>
+}

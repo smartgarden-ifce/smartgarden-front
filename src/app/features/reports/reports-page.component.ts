@@ -3,7 +3,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MessageModule } from 'primeng/message';
@@ -34,7 +33,7 @@ interface AppliedReportFilters {
 @Component({
   selector: 'app-reports-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePipe, DecimalPipe, ButtonModule, DatePickerModule, MessageModule, SelectModule],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, ButtonModule, DatePickerModule, MessageModule, SelectModule],
   templateUrl: './reports-page.component.html',
   styleUrls: ['./reports-page.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

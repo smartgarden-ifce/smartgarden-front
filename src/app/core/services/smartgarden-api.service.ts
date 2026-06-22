@@ -2,7 +2,15 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { DashboardSummary, Device, EnvironmentalReport, PageResponse, Reading } from '../models/smartgarden.models';
+import {
+  CreateDeviceRequest,
+  DashboardSummary,
+  Device,
+  EnvironmentalReport,
+  PageResponse,
+  Reading,
+  ReadingHistoryResponse
+} from '../models/smartgarden.models';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +26,26 @@ export class SmartgardenApiService {
 
   getDevices(): Observable<Device[]> {
     return this.http.get<Device[]>(`${this.apiBaseUrl}/devices`);
+  }
+
+  createDevice(request: CreateDeviceRequest): Observable<Device> {
+    return this.http.post<Device>(`${this.apiBaseUrl}/devices`, request);
+  }
+
+  getReadingHistory(
+    deviceCode: string,
+    hours: number,
+    limit = 120,
+    startAt?: string,
+    endAt?: string
+  ): Observable<ReadingHistoryResponse> {
+    let params = new HttpParams()
+      .set('deviceCode', deviceCode)
+      .set('hours', hours)
+      .set('limit', limit);
+    if (startAt) params = params.set('startAt', startAt);
+    if (endAt) params = params.set('endAt', endAt);
+    return this.http.get<ReadingHistoryResponse>(`${this.apiBaseUrl}/readings/history`, { params });
   }
 
   getReadings(options: {

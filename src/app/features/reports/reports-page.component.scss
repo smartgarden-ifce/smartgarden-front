@@ -1,36 +1,18 @@
 :host {
   display: block;
-  --text: #1f2c1f;
-  --muted: #637164;
-  --accent: #2d6a4f;
-  --line: #d9d4c7;
-  --panel: #fff;
-  --warm: #c96f2d;
-  --water: #2e7d8d;
-  --success: #2f7d4f;
+  margin: 0 auto;
+  --text: var(--sg-text);
+  --muted: var(--sg-muted);
+  --accent: var(--sg-accent);
+  --line: var(--sg-line);
+  --panel: var(--sg-panel);
+  --warm: var(--sg-warm);
+  --water: var(--sg-water);
+  --success: var(--sg-success);
   color: var(--text);
   font-family: 'Manrope', 'Segoe UI', sans-serif;
 }
 
-.report-shell {
-  min-height: 100vh;
-  padding: 28px;
-  background: linear-gradient(160deg, #edf6e8, #f6f2e8 48%, #efe7d9);
-}
-
-.report-frame {
-  max-width: 1320px;
-  margin: 0 auto;
-  overflow: hidden;
-  border: 1px solid rgba(90, 106, 84, 0.14);
-  border-radius: 28px;
-  background: rgba(255, 252, 247, 0.97);
-  box-shadow: 0 22px 48px rgba(92, 78, 54, 0.08);
-}
-
-.report-topbar,
-.brand-link,
-.back-link,
 .print-heading,
 .panel-title,
 .pagination,
@@ -39,25 +21,7 @@
   align-items: center;
 }
 
-.report-topbar {
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid rgba(90, 106, 84, 0.1);
-}
-
-.brand-link,
-.back-link {
-  gap: 0.7rem;
-  color: var(--accent);
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.brand-link img { width: 3rem; height: 3rem; object-fit: contain; }
-.brand-link span { letter-spacing: 0.05em; text-transform: uppercase; }
-.back-link { font-size: 0.9rem; }
-
-.report-content { padding: 2rem 1.5rem 1.5rem; }
+.report-content { padding: 0; }
 .report-title { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1.4rem; }
 .report-title h1 { margin: 0.25rem 0 0; font-size: clamp(2.3rem, 4vw, 3.4rem); line-height: 1; letter-spacing: -0.05em; }
 .report-title p { margin: 0.6rem 0 0; color: var(--muted); }
@@ -153,8 +117,6 @@ tbody tr:nth-child(even) { background: #fcfbf8; }
 }
 
 @media (max-width: 640px) {
-  .report-shell { padding: 12px; }
-  .report-content { padding: 1.25rem 0.85rem 0.85rem; }
   .report-title,
   .print-heading,
   .diagnosis-panel { flex-direction: column; }
@@ -167,8 +129,6 @@ tbody tr:nth-child(even) { background: #fcfbf8; }
 @media print {
   :host { color: #111; }
   .no-print { display: none !important; }
-  .report-shell { min-height: auto; padding: 0; background: #fff; }
-  .report-frame { max-width: none; overflow: visible; border: 0; border-radius: 0; box-shadow: none; }
   .report-content { padding: 0; }
   .print-heading,
   .summary-grid article,
