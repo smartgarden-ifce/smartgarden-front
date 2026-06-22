@@ -167,7 +167,7 @@ export class DashboardPageComponent {
       return 'Ambiente frio';
     }
 
-    return 'Ambiente estável';
+    return 'Temperatura agradável';
   }
 
   humidityStatusLabel(humidityPercent: number | null | undefined): string {
