@@ -1,16 +1,15 @@
-import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { forkJoin } from 'rxjs';
 
-import { DashboardSummary, Device, DeviceLatestReadingSummary, PageResponse, Reading } from '../../core/models/smartgarden.models';
+import { DashboardSummary, Device, DeviceLatestReadingSummary } from '../../core/models/smartgarden.models';
 import { SmartgardenApiService } from '../../core/services/smartgarden-api.service';
 
 interface SelectOption<T> {
@@ -18,57 +17,32 @@ interface SelectOption<T> {
   value: T;
 }
 
-interface ChartMarker {
-  key: string;
-  left: number;
-  top: number;
-  valueLabel: string;
-}
-
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    DatePipe,
-    DecimalPipe,
-    ButtonModule,
-    MessageModule,
-    SelectModule,
-    SkeletonModule
-  ],
+  imports: [CommonModule, FormsModule, DecimalPipe, ButtonModule, MessageModule, SelectModule, SkeletonModule],
   templateUrl: './dashboard-page.component.html',
-  styleUrls: ['./dashboard-page.component.scss'],
+  styleUrl: './dashboard-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardPageComponent {
   private readonly api = inject(SmartgardenApiService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly hoursOptions = [6, 24, 72, 168];
-  readonly pageSize = 10;
-
   readonly summary = signal<DashboardSummary | null>(null);
   readonly devices = signal<Device[]>([]);
-  readonly readingsPage = signal<PageResponse<Reading> | null>(null);
   readonly loading = signal(true);
-  readonly readingsLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly selectedHours = signal(24);
   readonly selectedDeviceCode = signal('');
-  readonly hourOptions: SelectOption<number>[] = this.hoursOptions.map((hours) => ({
+  readonly hourOptions: SelectOption<number>[] = [6, 24, 72, 168].map((hours) => ({
     label: `${hours} horas`,
     value: hours
   }));
 
   readonly deviceOptions = computed<SelectOption<string>[]>(() => [
-    { label: 'Todos', value: '' },
-    ...this.devices().map((device) => ({
-      label: device.name,
-      value: device.deviceCode
-    }))
+    { label: 'Todos os dispositivos', value: '' },
+    ...this.devices().map((device) => ({ label: device.name, value: device.deviceCode }))
   ]);
 
   readonly primaryDeviceSummary = computed<DeviceLatestReadingSummary | null>(() => {
@@ -76,51 +50,17 @@ export class DashboardPageComponent {
     if (!currentSummary) {
       return null;
     }
-
-    const selectedDeviceCode = this.selectedDeviceCode();
-    if (selectedDeviceCode) {
-      return currentSummary.latestReadingsByDevice.find((device) => device.deviceCode === selectedDeviceCode) ?? null;
-    }
-
-    return currentSummary.latestReadingsByDevice[0] ?? null;
+    const deviceCode = this.selectedDeviceCode();
+    return deviceCode
+      ? currentSummary.latestReadingsByDevice.find((device) => device.deviceCode === deviceCode) ?? null
+      : currentSummary.latestReadingsByDevice[0] ?? null;
   });
-
-  readonly latestReading = computed<Reading | null>(() => this.primaryDeviceSummary()?.latestReading ?? null);
-
-  readonly recentReadings = computed<Reading[]>(() => this.readingsPage()?.content ?? []);
-
-  readonly historicalReadings = computed<Reading[]>(() => {
-    return [...this.recentReadings()].reverse();
-  });
-
-  readonly temperatureChartPoints = computed(() => this.buildChartPoints(this.historicalReadings(), 'temperatureC'));
-  readonly humidityChartPoints = computed(() => this.buildChartPoints(this.historicalReadings(), 'humidityPercent'));
-  readonly temperatureChartMarkers = computed(() => this.buildChartMarkers(this.historicalReadings(), 'temperatureC', '°C'));
-  readonly humidityChartMarkers = computed(() => this.buildChartMarkers(this.historicalReadings(), 'humidityPercent', '%'));
-  readonly chartReady = computed(() => this.historicalReadings().length >= 2);
-  readonly chartLabels = computed(() => {
-    const readings = this.historicalReadings();
-    if (readings.length === 0) {
-      return ['--:--', '--:--', '--:--'];
-    }
-
-    const first = readings[0]?.recordedAt;
-    const middle = readings[Math.floor(readings.length / 2)]?.recordedAt;
-    const last = readings[readings.length - 1]?.recordedAt;
-
-    return [first, middle, last].map((value) => this.formatChartTime(value));
-  });
-
-  readonly activePercentage = computed(() => {
-    const currentSummary = this.summary();
-    if (!currentSummary || currentSummary.totalDevices === 0) {
-      return 0;
-    }
-
-    return (currentSummary.activeDevices / currentSummary.totalDevices) * 100;
-  });
-
+  readonly latestReading = computed(() => this.primaryDeviceSummary()?.latestReading ?? null);
   readonly criteria = computed(() => this.summary()?.criteria ?? null);
+  readonly activePercentage = computed(() => {
+    const current = this.summary();
+    return current?.totalDevices ? (current.activeDevices / current.totalDevices) * 100 : 0;
+  });
 
   constructor() {
     this.loadInitialData();
@@ -131,315 +71,95 @@ export class DashboardPageComponent {
     this.loadSummary();
   }
 
-  onDeviceFilterChange(deviceCode: string): void {
+  onDeviceChange(deviceCode: string): void {
     this.selectedDeviceCode.set(deviceCode);
-    this.loadReadings(0);
-  }
-
-  goToPreviousPage(): void {
-    const currentPage = this.readingsPage();
-    if (!currentPage || currentPage.first) {
-      return;
-    }
-
-    this.loadReadings(currentPage.page - 1);
-  }
-
-  goToNextPage(): void {
-    const currentPage = this.readingsPage();
-    if (!currentPage || currentPage.last) {
-      return;
-    }
-
-    this.loadReadings(currentPage.page + 1);
   }
 
   refresh(): void {
     this.loadInitialData();
   }
 
-  temperatureStatusLabel(temperatureC: number | null | undefined): string {
-    if (temperatureC == null) {
-      return 'Sem leitura';
-    }
-
-    const criteria = this.criteria();
-    if (!criteria) {
-      return 'Critério indisponível';
-    }
-
-    if (temperatureC > criteria.temperatureMaxC) {
-      return 'Ambiente quente';
-    }
-
-    if (temperatureC < criteria.temperatureMinC) {
-      return 'Ambiente frio';
-    }
-
-    return 'Temperatura agradável';
-  }
-
-  humidityStatusLabel(humidityPercent: number | null | undefined): string {
-    if (humidityPercent == null) {
-      return 'Umidade indisponível';
-    }
-
-    const criteria = this.criteria();
-    if (!criteria) {
-      return 'Critério indisponível';
-    }
-
-    if (humidityPercent < criteria.humidityMinPercent) {
-      return 'Umidade baixa';
-    }
-
-    if (humidityPercent > criteria.humidityMaxPercent) {
-      return 'Umidade alta';
-    }
-
-    return 'Umidade normal';
-  }
-
-  combinedReadingStatus(reading: Reading): string {
-    return `${this.temperatureStatusLabel(reading.temperatureC)} / ${this.humidityStatusLabel(reading.humidityPercent)}`;
-  }
-
   sensorConnectionLabel(active: boolean | null | undefined): string {
     return active ? 'Online' : 'Offline';
   }
 
-  environmentToneClass(): string {
-    const latest = this.latestReading();
+  temperatureStatusLabel(temperatureC: number | null | undefined): string {
     const criteria = this.criteria();
-    if (!latest || !criteria) {
-      return 'tone-neutral';
-    }
+    if (temperatureC == null) return 'Sem leitura';
+    if (!criteria) return 'Critério indisponível';
+    if (temperatureC > criteria.temperatureMaxC) return 'Ambiente quente';
+    if (temperatureC < criteria.temperatureMinC) return 'Ambiente frio';
+    return 'Temperatura agradável';
+  }
 
-    if (latest.temperatureC > criteria.temperatureMaxC) {
-      return 'tone-warm';
-    }
+  humidityStatusLabel(humidityPercent: number | null | undefined): string {
+    const criteria = this.criteria();
+    if (humidityPercent == null) return 'Sem leitura';
+    if (!criteria) return 'Critério indisponível';
+    if (humidityPercent < criteria.humidityMinPercent) return 'Umidade baixa';
+    if (humidityPercent > criteria.humidityMaxPercent) return 'Umidade alta';
+    return 'Umidade normal';
+  }
 
-    if (latest.temperatureC < criteria.temperatureMinC) {
-      return 'tone-cool';
-    }
+  actionRecommendationLabel(): string {
+    const reading = this.latestReading();
+    const criteria = this.criteria();
+    if (!reading) return 'Aguardando leitura';
+    if (!criteria) return 'Critério indisponível';
+    if (reading.temperatureC > criteria.temperatureMaxC && reading.humidityPercent < criteria.humidityMinPercent) return 'Sombrear e irrigar';
+    if (reading.temperatureC > criteria.temperatureMaxC) return 'Reduzir calor';
+    if (reading.humidityPercent < criteria.humidityMinPercent) return 'Verificar irrigação';
+    if (reading.humidityPercent > criteria.humidityMaxPercent) return 'Aumentar ventilação';
+    if (reading.temperatureC < criteria.temperatureMinC) return 'Monitorar frio';
+    return 'Sem ação necessária';
+  }
 
+  temperatureToneClass(): string {
+    const reading = this.latestReading();
+    const criteria = this.criteria();
+    if (!reading || !criteria) return 'tone-neutral';
+    if (reading.temperatureC > criteria.temperatureMaxC) return 'tone-warm';
+    if (reading.temperatureC < criteria.temperatureMinC) return 'tone-cool';
     return 'tone-adequate';
   }
 
   humidityToneClass(): string {
-    const latest = this.latestReading();
+    const reading = this.latestReading();
     const criteria = this.criteria();
-    if (!latest || !criteria) {
-      return 'tone-neutral';
-    }
-
-    if (latest.humidityPercent > criteria.humidityMaxPercent) {
-      return 'tone-water';
-    }
-
-    if (latest.humidityPercent < criteria.humidityMinPercent) {
-      return 'tone-dry';
-    }
-
+    if (!reading || !criteria) return 'tone-neutral';
+    if (reading.humidityPercent > criteria.humidityMaxPercent) return 'tone-water';
+    if (reading.humidityPercent < criteria.humidityMinPercent) return 'tone-dry';
     return 'tone-adequate';
   }
 
-  actionRecommendationLabel(): string {
-    const latest = this.latestReading();
-    if (!latest) {
-      return 'Aguardando leitura';
-    }
-
-    const criteria = this.criteria();
-    if (!criteria) {
-      return 'Critério indisponível';
-    }
-
-    if (latest.temperatureC > criteria.temperatureMaxC
-      && latest.humidityPercent < criteria.humidityMinPercent) {
-      return 'Sombrear e irrigar';
-    }
-
-    if (latest.temperatureC > criteria.temperatureMaxC) {
-      return 'Reduzir calor';
-    }
-
-    if (latest.humidityPercent < criteria.humidityMinPercent) {
-      return 'Verificar irrigação';
-    }
-
-    if (latest.humidityPercent > criteria.humidityMaxPercent) {
-      return 'Aumentar ventilação';
-    }
-
-    if (latest.temperatureC < criteria.temperatureMinC) {
-      return 'Monitorar frio';
-    }
-
-    return 'Sem ação necessária';
-  }
-
-  actionToneClass(): string {
-    const latest = this.latestReading();
-    const criteria = this.criteria();
-    if (!latest || !criteria) {
-      return 'tone-neutral';
-    }
-
-    if (latest.temperatureC > criteria.temperatureMaxC) {
-      return 'tone-warm';
-    }
-
-    if (latest.humidityPercent < criteria.humidityMinPercent) {
-      return 'tone-dry';
-    }
-
-    if (latest.humidityPercent > criteria.humidityMaxPercent) {
-      return 'tone-water';
-    }
-
-    if (latest.temperatureC < criteria.temperatureMinC) {
-      return 'tone-cool';
-    }
-
-    return 'tone-adequate';
-  }
-
-  sensorToneClass(): string {
-    return this.primaryDeviceSummary()?.active ? 'tone-online' : 'tone-offline';
-  }
-
-  lastUpdatedLabel(dateValue: string | null | undefined): string {
-    if (!dateValue) {
-      return 'sem dados';
-    }
-
-    const diffSeconds = Math.max(0, Math.round((Date.now() - new Date(dateValue).getTime()) / 1000));
-    if (diffSeconds < 60) {
-      return `${diffSeconds}s`;
-    }
-
-    const diffMinutes = Math.round(diffSeconds / 60);
-    if (diffMinutes < 60) {
-      return `${diffMinutes} min`;
-    }
-
-    const diffHours = Math.round(diffMinutes / 60);
-    return `${diffHours}h`;
-  }
-
-  tableStatusClass(reading: Reading): string {
-    const criteria = this.criteria();
-    if (!criteria) {
-      return 'is-normal';
-    }
-
-    if (reading.temperatureC < criteria.temperatureMinC
-      || reading.temperatureC > criteria.temperatureMaxC
-      || reading.humidityPercent > criteria.humidityMaxPercent) {
-      return 'is-warm';
-    }
-
-    if (reading.humidityPercent < criteria.humidityMinPercent) {
-      return 'is-dry';
-    }
-
-    return 'is-normal';
-  }
-
-  trackByReadingId(_: number, reading: Reading): number {
-    return reading.id;
-  }
-
-  private formatChartTime(dateValue: string | null | undefined): string {
-    if (!dateValue) {
-      return '--:--';
-    }
-
-    return new Intl.DateTimeFormat('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(new Date(dateValue));
-  }
-
-  private buildChartPoints(readings: Reading[], field: 'temperatureC' | 'humidityPercent'): string {
-    if (readings.length === 0) {
-      return '';
-    }
-
-    const values = readings.map((reading) => reading[field]);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = Math.max(max - min, 1);
-
-    return values.map((value, index) => {
-      const { x, y } = this.getChartCoordinates(value, index, values.length, min, range);
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    }).join(' ');
-  }
-
-  private buildChartMarkers(readings: Reading[], field: 'temperatureC' | 'humidityPercent', unit: string): ChartMarker[] {
-    if (readings.length === 0) {
-      return [];
-    }
-
-    const values = readings.map((reading) => reading[field]);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = Math.max(max - min, 1);
-
-    return readings.map((reading, index) => {
-      const value = reading[field];
-      const { x, y } = this.getChartCoordinates(value, index, values.length, min, range);
-
-      return {
-        key: `${field}-${reading.id}`,
-        left: (x / 320) * 100,
-        top: (y / 130) * 100,
-        valueLabel: `${value.toFixed(1)} ${unit}`
-      };
-    });
-  }
-
-  private getChartCoordinates(value: number, index: number, total: number, min: number, range: number): { x: number; y: number } {
-    const x = total === 1 ? 160 : 18 + (index / (total - 1)) * 284;
-    const y = 104 - ((value - min) / range) * 68;
-
-    return { x, y };
+  lastUpdatedLabel(value: string | null | undefined): string {
+    if (!value) return 'sem dados';
+    const seconds = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 1000));
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return `${minutes} min`;
+    return `${Math.round(minutes / 60)}h`;
   }
 
   private loadInitialData(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
-
     forkJoin({
       summary: this.api.getDashboardSummary(this.selectedHours()),
-      devices: this.api.getDevices(),
-      readings: this.api.getReadings({
-        page: 0,
-        size: this.pageSize,
-        deviceCode: this.selectedDeviceCode() || undefined
-      })
-    })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: ({ summary, devices, readings }) => {
-          this.summary.set(summary);
-          this.devices.set(devices);
-          this.readingsPage.set(readings);
-          this.loading.set(false);
-        },
-        error: (error) => {
-          this.errorMessage.set(this.toErrorMessage(error));
-          this.loading.set(false);
-        }
-      });
+      devices: this.api.getDevices()
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: ({ summary, devices }) => {
+        this.summary.set(summary);
+        this.devices.set(devices);
+        this.loading.set(false);
+      },
+      error: (error) => this.handleError(error)
+    });
   }
 
   private loadSummary(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
-
     this.api.getDashboardSummary(this.selectedHours())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -447,48 +167,18 @@ export class DashboardPageComponent {
           this.summary.set(summary);
           this.loading.set(false);
         },
-        error: (error) => {
-          this.errorMessage.set(this.toErrorMessage(error));
-          this.loading.set(false);
-        }
+        error: (error) => this.handleError(error)
       });
   }
 
-  private loadReadings(page: number): void {
-    this.readingsLoading.set(true);
-    this.errorMessage.set(null);
-
-    this.api.getReadings({
-      page,
-      size: this.pageSize,
-      deviceCode: this.selectedDeviceCode() || undefined
-    })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (readings) => {
-          this.readingsPage.set(readings);
-          this.readingsLoading.set(false);
-        },
-        error: (error) => {
-          this.errorMessage.set(this.toErrorMessage(error));
-          this.readingsLoading.set(false);
-        }
-      });
-  }
-
-  private toErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      if (typeof error.error?.message === 'string') {
-        return error.error.message;
-      }
-
-      if (Array.isArray(error.error?.messages) && error.error.messages.length > 0) {
-        return error.error.messages.join(' | ');
-      }
-
-      return `Falha ao carregar dados do backend (${error.status}).`;
+  private handleError(error: unknown): void {
+    if (error instanceof HttpErrorResponse && typeof error.error?.message === 'string') {
+      this.errorMessage.set(error.error.message);
+    } else if (error instanceof HttpErrorResponse) {
+      this.errorMessage.set(`Falha ao carregar dados do backend (${error.status}).`);
+    } else {
+      this.errorMessage.set('Falha inesperada ao carregar os dados do SmartGarden.');
     }
-
-    return 'Falha inesperada ao carregar os dados do SmartGarden.';
+    this.loading.set(false);
   }
 }

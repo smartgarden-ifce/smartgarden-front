@@ -3,6 +3,24 @@
 :root {
   color-scheme: light;
   font-family: 'Aptos', 'Segoe UI', sans-serif;
+  --sg-page-bg: #f2f6ef;
+  --sg-panel: #ffffff;
+  --sg-panel-soft: #f7f8f3;
+  --sg-line: rgba(74, 101, 78, 0.14);
+  --sg-line-strong: rgba(74, 101, 78, 0.25);
+  --sg-text: #1f2c1f;
+  --sg-muted: #637164;
+  --sg-accent: #2d6a4f;
+  --sg-accent-soft: #e4f1e8;
+  --sg-success: #2f7d4f;
+  --sg-success-soft: #dff0e5;
+  --sg-warm: #c96f2d;
+  --sg-warm-soft: #f8e2cf;
+  --sg-water: #2e7d8d;
+  --sg-water-soft: #dceff3;
+  --sg-danger: #b05b46;
+  --sg-danger-soft: #f3ddd6;
+  --sg-shadow: 0 12px 30px rgba(58, 78, 60, 0.07);
 }
 
 html,
@@ -12,9 +30,10 @@ body {
 }
 
 body {
-  background: #f5efe3;
-  color: #1f2a21;
+  background: var(--sg-page-bg);
+  color: var(--sg-text);
   font-family: 'Aptos', 'Segoe UI', sans-serif;
+  overflow-x: hidden;
 }
 
 *,
@@ -26,3 +45,14 @@ body {
 .p-component {
   font-family: 'Aptos', 'Segoe UI', sans-serif;
 }
+
+.page-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
+.page-header h1 { margin: .25rem 0 0; font-size: clamp(2rem, 4vw, 3rem); line-height: 1; letter-spacing: -.045em; }
+.page-header p { max-width: 720px; margin: .55rem 0 0; color: var(--sg-muted); }
+.page-eyebrow { color: var(--sg-accent); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.page-panel { min-width: 0; padding: 1.2rem; border: 1px solid var(--sg-line); border-radius: 20px; background: var(--sg-panel); box-shadow: var(--sg-shadow); }
+.toolbar-card { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)) auto; gap: .85rem; align-items: end; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--sg-line); border-radius: 18px; background: var(--sg-panel); box-shadow: var(--sg-shadow); }
+.toolbar-card label { display: grid; min-width: 0; gap: .4rem; }
+.toolbar-card label > span { color: var(--sg-muted); font-size: .72rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.page-feedback { margin-bottom: 1rem; }
+@media (max-width: 680px) { .page-header { align-items: flex-start; flex-direction: column; } .page-header > div { min-width: 0; width: 100%; } .page-header p { overflow-wrap: anywhere; } .toolbar-card { grid-template-columns: 1fr; } }
