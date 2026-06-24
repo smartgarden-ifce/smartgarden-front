@@ -1,13 +1,11 @@
 <header class="page-header">
-  <div><span class="page-eyebrow">Dispositivos</span><h1>Sensores do jardim</h1><p>Consulte o estado das estações ESP32 e cadastre novos pontos de coleta.</p></div>
+  <div><span class="page-eyebrow">Dispositivos</span><h1>Sensores do jardim</h1><p>Consulte o estado das estações ESP32 cadastradas pela API.</p></div>
   <span class="device-count">{{ devices().length }} {{ devices().length === 1 ? 'dispositivo' : 'dispositivos' }}</span>
 </header>
 
 @if (errorMessage(); as error) { <div class="page-feedback"><p-message severity="error" [text]="error"></p-message></div> }
-@if (successMessage(); as success) { <div class="page-feedback"><p-message severity="success" [text]="success"></p-message></div> }
 
-<div class="devices-layout">
-  <section class="page-panel list-panel">
+<section class="page-panel list-panel">
     <div class="panel-heading"><div><span class="page-eyebrow">Estações cadastradas</span><h2>Inventário de sensores</h2></div></div>
     @if (loading()) {
       <div class="device-list">@for (item of [1, 2, 3]; track item) { <div class="device-card"><p-skeleton width="12rem" /><p-skeleton width="8rem" /></div> }</div>
@@ -26,21 +24,8 @@
             <span class="status" [class.online]="device.active"><i></i>{{ device.active ? 'Online' : 'Offline' }}</span>
           </article>
         } @empty {
-          <div class="empty-state"><i class="pi pi-inbox"></i><h3>Nenhum dispositivo cadastrado</h3><p>Use o formulário para adicionar a primeira estação.</p></div>
+          <div class="empty-state"><i class="pi pi-inbox"></i><h3>Nenhum dispositivo cadastrado</h3><p>Cadastre a primeira estação pelo Swagger da API.</p></div>
         }
       </div>
     }
-  </section>
-
-  <aside class="page-panel form-panel">
-    <span class="page-eyebrow">Novo dispositivo</span>
-    <h2>Cadastrar estação</h2>
-    <p>O código deve ser o mesmo configurado no firmware do ESP32.</p>
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <label><span>Código do dispositivo *</span><input pInputText formControlName="deviceCode" maxlength="100" placeholder="esp32-jardim-01" [class.ng-invalid]="fieldInvalid('deviceCode')" />@if (fieldInvalid('deviceCode')) { <small>Informe um código de até 100 caracteres.</small> }</label>
-      <label><span>Nome *</span><input pInputText formControlName="name" maxlength="120" placeholder="Sensor Jardim 01" [class.ng-invalid]="fieldInvalid('name')" />@if (fieldInvalid('name')) { <small>Informe um nome de até 120 caracteres.</small> }</label>
-      <label><span>Localização</span><input pInputText formControlName="location" maxlength="200" placeholder="Canteiro principal" [class.ng-invalid]="fieldInvalid('location')" />@if (fieldInvalid('location')) { <small>Use no máximo 200 caracteres.</small> }</label>
-      <p-button type="submit" label="Cadastrar dispositivo" icon="pi pi-plus" [loading]="saving()" [disabled]="saving()" />
-    </form>
-  </aside>
-</div>
+</section>

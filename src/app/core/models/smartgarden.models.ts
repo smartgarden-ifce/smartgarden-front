@@ -43,12 +43,6 @@ export interface Device {
   lastSeenAt: string | null;
 }
 
-export interface CreateDeviceRequest {
-  deviceCode: string;
-  name: string;
-  location: string | null;
-}
-
 export interface ReadingHistoryResponse {
   deviceCode: string;
   deviceName: string;

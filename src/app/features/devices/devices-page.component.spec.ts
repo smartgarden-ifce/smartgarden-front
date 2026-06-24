@@ -17,35 +17,24 @@ describe('DevicesPageComponent', () => {
 
   afterEach(() => http.verify());
 
-  it('should create a device and append it to the list', () => {
+  it('should load and display the registered devices', () => {
     const fixture = TestBed.createComponent(DevicesPageComponent);
-    http.expectOne('http://localhost:8080/api/devices').flush([]);
-    const component = fixture.componentInstance;
-    component.form.setValue({ deviceCode: 'esp32-01', name: 'Sensor 01', location: 'Canteiro' });
-
-    component.submit();
-
-    const request = http.expectOne('http://localhost:8080/api/devices');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ deviceCode: 'esp32-01', name: 'Sensor 01', location: 'Canteiro' });
-    request.flush({
+    http.expectOne('http://localhost:8080/api/devices').flush([{
       id: 1, deviceCode: 'esp32-01', name: 'Sensor 01', location: 'Canteiro', active: true,
       createdAt: '', updatedAt: '', lastSeenAt: null
-    });
+    }]);
+    fixture.detectChanges();
 
-    expect(component.devices().length).toBe(1);
-    expect(component.successMessage()).toContain('cadastrado com sucesso');
+    expect(fixture.componentInstance.devices().length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Sensor 01');
+    http.expectNone((request) => request.method === 'POST');
   });
 
-  it('should present a conflict when the device code already exists', () => {
+  it('should direct empty inventories to Swagger', () => {
     const fixture = TestBed.createComponent(DevicesPageComponent);
     http.expectOne('http://localhost:8080/api/devices').flush([]);
-    const component = fixture.componentInstance;
-    component.form.setValue({ deviceCode: 'esp32-01', name: 'Sensor duplicado', location: '' });
+    fixture.detectChanges();
 
-    component.submit();
-    http.expectOne('http://localhost:8080/api/devices').flush({}, { status: 409, statusText: 'Conflict' });
-
-    expect(component.errorMessage()).toContain('Já existe');
+    expect(fixture.nativeElement.textContent).toContain('Swagger da API');
   });
 });

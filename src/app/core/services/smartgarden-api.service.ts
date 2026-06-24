@@ -3,7 +3,6 @@ import { inject, Injectable } from '@angular/core';
 import { EMPTY, Observable, expand, reduce } from 'rxjs';
 
 import {
-  CreateDeviceRequest,
   DashboardSummary,
   Device,
   EnvironmentalReport,
@@ -26,10 +25,6 @@ export class SmartgardenApiService {
 
   getDevices(): Observable<Device[]> {
     return this.http.get<Device[]>(`${this.apiBaseUrl}/devices`);
-  }
-
-  createDevice(request: CreateDeviceRequest): Observable<Device> {
-    return this.http.post<Device>(`${this.apiBaseUrl}/devices`, request);
   }
 
   getReadingHistory(
