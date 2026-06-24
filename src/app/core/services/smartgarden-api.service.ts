@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable, expand, reduce } from 'rxjs';
 
 import {
   CreateDeviceRequest,
@@ -72,6 +72,20 @@ export class SmartgardenApiService {
     }
 
     return this.http.get<PageResponse<Reading>>(`${this.apiBaseUrl}/readings`, { params });
+  }
+
+  getAllReadings(options: {
+    deviceCode: string;
+    startAt: string;
+    endAt: string;
+  }): Observable<Reading[]> {
+    const pageSize = 200;
+    return this.getReadings({ ...options, page: 0, size: pageSize }).pipe(
+      expand((page) => page.last
+        ? EMPTY
+        : this.getReadings({ ...options, page: page.page + 1, size: pageSize })),
+      reduce((readings, page) => readings.concat(page.content), [] as Reading[])
+    );
   }
 
   getEnvironmentalReport(deviceCode: string, startAt: string, endAt: string): Observable<EnvironmentalReport> {

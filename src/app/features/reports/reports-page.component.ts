@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
-import { forkJoin } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import type { jsPDF as JsPdfDocument } from 'jspdf';
 
 import {
@@ -150,9 +150,13 @@ export class ReportsPageComponent {
     this.pdfGenerating.set(true);
     this.errorMessage.set(null);
     try {
-      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable')
+      const filters = this.appliedFilters();
+      if (!filters) {
+        throw new Error('Filtros do relatório não encontrados.');
+      }
+      const [readings, [{ jsPDF }, { default: autoTable }]] = await Promise.all([
+        firstValueFrom(this.api.getAllReadings(filters)),
+        Promise.all([import('jspdf'), import('jspdf-autotable')])
       ]);
       const document = new jsPDF({ unit: 'mm', format: 'a4' });
       this.drawPdfHeader(document, report);
@@ -180,6 +184,39 @@ export class ReportsPageComponent {
         document.setFontSize(9);
         document.setTextColor(99, 113, 100);
         document.text('Nenhuma exceção encontrada no período.', 14, cursorY + 8);
+        this.drawPdfFooter(document);
+      }
+
+      document.addPage();
+      document.setFontSize(12);
+      document.setFont('helvetica', 'bold');
+      document.setTextColor(31, 44, 31);
+      document.text(`Histórico completo (${readings.length} leituras)`, 14, 18);
+      document.setFont('helvetica', 'normal');
+      document.setFontSize(8);
+      document.setTextColor(99, 113, 100);
+      document.text('Registros ordenados do mais recente para o mais antigo.', 14, 23);
+
+      if (readings.length > 0) {
+        autoTable(document, {
+          startY: 27,
+          head: [['Data e hora', 'Temperatura', 'Umidade', 'Status']],
+          body: readings.map((reading) => [
+            this.formatDateTime(reading.recordedAt),
+            `${reading.temperatureC.toFixed(1)} °C`,
+            `${reading.humidityPercent.toFixed(1)} %`,
+            `${this.temperatureStatus(reading.temperatureC, report.criteria)} / ${this.humidityStatus(reading.humidityPercent, report.criteria)}`
+          ]),
+          theme: 'grid',
+          styles: { fontSize: 7.5, cellPadding: 1.8 },
+          headStyles: { fillColor: [45, 106, 79], textColor: 255 },
+          alternateRowStyles: { fillColor: [248, 245, 238] },
+          margin: { left: 14, right: 14, bottom: 12 },
+          didDrawPage: () => this.drawPdfFooter(document)
+        });
+      } else {
+        document.setFontSize(9);
+        document.text('Nenhuma leitura encontrada no período.', 14, 32);
         this.drawPdfFooter(document);
       }
 
