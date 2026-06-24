@@ -7,10 +7,11 @@ import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
-import { forkJoin } from 'rxjs';
+import { EMPTY, auditTime, catchError, exhaustMap, forkJoin, tap } from 'rxjs';
 
 import { DashboardSummary, Device, DeviceLatestReadingSummary } from '../../core/models/smartgarden.models';
 import { SmartgardenApiService } from '../../core/services/smartgarden-api.service';
+import { ReadingEventsService } from '../../core/services/reading-events.service';
 
 interface SelectOption<T> {
   label: string;
@@ -28,6 +29,7 @@ interface SelectOption<T> {
 export class DashboardPageComponent {
   private readonly api = inject(SmartgardenApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly readingEvents = inject(ReadingEventsService);
 
   readonly summary = signal<DashboardSummary | null>(null);
   readonly devices = signal<Device[]>([]);
@@ -64,6 +66,7 @@ export class DashboardPageComponent {
 
   constructor() {
     this.loadInitialData();
+    this.subscribeToReadingEvents();
   }
 
   onHoursChange(hours: number): void {
@@ -142,19 +145,35 @@ export class DashboardPageComponent {
   }
 
   private loadInitialData(): void {
-    this.loading.set(true);
+    this.fetchDashboardData(true).subscribe();
+  }
+
+  private fetchDashboardData(showLoading: boolean) {
+    if (showLoading) this.loading.set(true);
     this.errorMessage.set(null);
-    forkJoin({
+    return forkJoin({
       summary: this.api.getDashboardSummary(this.selectedHours()),
       devices: this.api.getDevices()
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: ({ summary, devices }) => {
+    }).pipe(
+      tap(({ summary, devices }) => {
         this.summary.set(summary);
         this.devices.set(devices);
         this.loading.set(false);
-      },
-      error: (error) => this.handleError(error)
-    });
+      }),
+      catchError((error) => {
+        this.handleError(error);
+        return EMPTY;
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    );
+  }
+
+  private subscribeToReadingEvents(): void {
+    this.readingEvents.watch().pipe(
+      auditTime(500),
+      exhaustMap(() => this.fetchDashboardData(false)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe();
   }
 
   private loadSummary(): void {

@@ -13,6 +13,7 @@ export interface Reading {
   deviceId: number;
   deviceCode: string;
   deviceName: string;
+  messageId: string | null;
   temperatureC: number;
   humidityPercent: number;
   recordedAt: string;

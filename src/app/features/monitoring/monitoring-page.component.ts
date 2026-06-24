@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
-import { forkJoin } from 'rxjs';
+import { EMPTY, Subscription, auditTime, catchError, exhaustMap, forkJoin, tap } from 'rxjs';
 
 import {
   Device,
@@ -17,6 +17,7 @@ import {
   ReadingHistoryResponse
 } from '../../core/models/smartgarden.models';
 import { SmartgardenApiService } from '../../core/services/smartgarden-api.service';
+import { ReadingEventsService } from '../../core/services/reading-events.service';
 
 interface SelectOption<T> { label: string; value: T; }
 
@@ -31,7 +32,9 @@ interface SelectOption<T> { label: string; value: T; }
 export class MonitoringPageComponent {
   private readonly api = inject(SmartgardenApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly readingEvents = inject(ReadingEventsService);
   private readonly pageSize = 20;
+  private eventsSubscription?: Subscription;
 
   readonly devices = signal<Device[]>([]);
   readonly history = signal<ReadingHistoryResponse | null>(null);
@@ -58,12 +61,14 @@ export class MonitoringPageComponent {
   });
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.eventsSubscription?.unsubscribe());
     this.loadDevices();
   }
 
   onDeviceChange(deviceCode: string): void {
     this.selectedDeviceCode.set(deviceCode);
     this.loadMonitoringData();
+    this.subscribeToReadingEvents();
   }
 
   onHoursChange(hours: number): void {
@@ -122,31 +127,50 @@ export class MonitoringPageComponent {
         }
         this.selectedDeviceCode.set(devices[0].deviceCode);
         this.loadMonitoringData();
+        this.subscribeToReadingEvents();
       },
       error: (error) => this.handleError(error)
     });
   }
 
   private loadMonitoringData(): void {
+    this.fetchMonitoringData(true).subscribe();
+  }
+
+  private fetchMonitoringData(showLoading: boolean) {
     const deviceCode = this.selectedDeviceCode();
-    if (!deviceCode) return;
-    this.loading.set(true);
+    if (!deviceCode) return EMPTY;
+    if (showLoading) this.loading.set(true);
     this.errorMessage.set(null);
     const range = this.currentRange();
     this.appliedRange.set(range);
-    forkJoin({
+    return forkJoin({
       history: this.api.getReadingHistory(deviceCode, this.selectedHours(), 120, range.startAt, range.endAt),
       readings: this.api.getReadings({ deviceCode, page: 0, size: this.pageSize, ...range }),
       summary: this.api.getDashboardSummary(this.selectedHours())
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: ({ history, readings, summary }) => {
+    }).pipe(
+      tap(({ history, readings, summary }) => {
         this.history.set(history);
         this.readingsPage.set(readings);
         this.criteria.set(summary.criteria);
         this.loading.set(false);
-      },
-      error: (error) => this.handleError(error)
-    });
+      }),
+      catchError((error) => {
+        this.handleError(error);
+        return EMPTY;
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    );
+  }
+
+  private subscribeToReadingEvents(): void {
+    this.eventsSubscription?.unsubscribe();
+    const deviceCode = this.selectedDeviceCode();
+    if (!deviceCode) return;
+    this.eventsSubscription = this.readingEvents.watch(deviceCode).pipe(
+      auditTime(500),
+      exhaustMap(() => this.fetchMonitoringData(false))
+    ).subscribe();
   }
 
   private loadReadingsPage(page: number): void {
