@@ -104,10 +104,9 @@
         <details class="report-panel criteria-panel" open>
           <summary>Como interpretar os dados</summary>
           <div class="criteria-grid">
-            <p><strong>Temperatura:</strong> {{ currentReport.criteria.temperatureDescription }}</p>
-            <p><strong>Umidade:</strong> {{ currentReport.criteria.humidityDescription }}</p>
+            <p><strong>Temperatura:</strong> {{ criteriaDescription(currentReport.criteria.temperatureDescription) }}</p>
+            <p><strong>Umidade:</strong> {{ criteriaDescription(currentReport.criteria.humidityDescription) }}</p>
             <p><strong>Ambiente adequado:</strong> {{ currentReport.criteria.environmentDescription }}</p>
-            <p><strong>Importante:</strong> “Adequado” descreve a faixa da leitura; estabilidade exigiria analisar sua variação no tempo.</p>
           </div>
         </details>
 

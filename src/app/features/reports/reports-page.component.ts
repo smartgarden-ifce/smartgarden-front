@@ -258,6 +258,10 @@ export class ReportsPageComponent {
     return adequate ? 'is-adequate' : 'is-exception';
   }
 
+  criteriaDescription(description: string): string {
+    return description.replace(/,\s*inclusive\.$/i, '.');
+  }
+
   private loadInitialData(): void {
     this.api.getDevices()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -396,10 +400,9 @@ export class ReportsPageComponent {
     document.setFont('helvetica', 'normal');
     document.setFontSize(8);
     const criteriaText = [
-      report.criteria.temperatureDescription,
-      report.criteria.humidityDescription,
-      report.criteria.environmentDescription,
-      'Adequado descreve a faixa da leitura; estabilidade exige analisar a variação no tempo.'
+      this.criteriaDescription(report.criteria.temperatureDescription),
+      this.criteriaDescription(report.criteria.humidityDescription),
+      report.criteria.environmentDescription
     ].join('  ');
     const lines = document.splitTextToSize(criteriaText, 182);
     document.text(lines, 14, startY + 5);

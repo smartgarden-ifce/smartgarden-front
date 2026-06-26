@@ -27,7 +27,7 @@ describe('ReportsPageComponent', () => {
     expect(fixture.componentInstance.loading()).toBeFalse();
   });
 
-  it('should classify inclusive boundaries as adequate', () => {
+  it('should classify boundary values as adequate', () => {
     const fixture = TestBed.createComponent(ReportsPageComponent);
     http.expectOne('http://localhost:8080/api/devices').flush([]);
     const component = fixture.componentInstance;
@@ -47,6 +47,14 @@ describe('ReportsPageComponent', () => {
     expect(component.humidityStatus(70, criteria)).toBe('Umidade normal');
     expect(component.readingStatusClass({ temperatureC: 20, humidityPercent: 70 } as never, criteria))
       .toBe('is-adequate');
+  });
+
+  it('should hide inclusive suffix from criteria descriptions', () => {
+    const fixture = TestBed.createComponent(ReportsPageComponent);
+    http.expectOne('http://localhost:8080/api/devices').flush([]);
+
+    expect(fixture.componentInstance.criteriaDescription('Temperatura agradável entre 20 e 30 °C, inclusive.'))
+      .toBe('Temperatura agradável entre 20 e 30 °C.');
   });
 
   it('should reject a period greater than 31 days before calling the API', () => {
